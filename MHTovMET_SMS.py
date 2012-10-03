@@ -23,7 +23,21 @@ def threeToTwo(h3) :
     h2.GetZaxis().SetTitle(h3.GetZaxis().GetTitle())
     return h2
 
-
+subDirList = [
+    "smsScan_geq1b_geq2j_AlphaT55_375_475",
+    "smsScan_geq1b_geq2j_AlphaT55_475_575",
+    "smsScan_geq1b_geq2j_AlphaT55_575_675",
+    "smsScan_geq1b_geq2j_AlphaT55_675_775",
+    "smsScan_geq1b_geq2j_AlphaT55_775_875",
+    "smsScan_geq1b_geq2j_AlphaT55_875",
+    "smsScan_eq0b_geq2j_AlphaT55_375_475",
+    "smsScan_eq0b_geq2j_AlphaT55_475_575",
+    "smsScan_eq0b_geq2j_AlphaT55_575_675",
+    "smsScan_eq0b_geq2j_AlphaT55_675_775",
+    "smsScan_eq0b_geq2j_AlphaT55_775_875",
+    "smsScan_eq0b_geq2j_AlphaT55_875",
+    
+]
 settings = {
     "HTBins":["a"],
     "SubProcesses":["nn","ns","ng","ss","ll","sb","tb","gg","bb","sg"]
@@ -48,8 +62,8 @@ def nloTotalXsecMaker(individualXSecs = None):
         if out is None: out = h.Clone()
         else: out.Add(h)
     return out
-models = ["T1ttttProto",]#"T2bb","T2tt","T1tttt","T1bbbb"]
-Cuts = [1,]
+models = ["T2bb",]#"T2tt","T1tttt","T1bbbb"]
+Cuts = ["OP_MHToverMET","OP_DeadECALCut"]
 for cut in Cuts:
   for model in models:
 
@@ -116,7 +130,7 @@ for cut in Cuts:
     
     
     
-      c1 = Print("./out/MHToverMET_SMS%s.pdf"%(model))
+      c1 = Print("./out/%s_SMS%s.pdf"%(cut,model))
       c1.DoPageNum = False
       c1.open()
       r.gPad.SetRightMargin(0.175)
@@ -124,8 +138,8 @@ for cut in Cuts:
       r.gPad.SetTopMargin(0.05)
       r.gPad.SetBottomMargin(0.15)
       print model, cut
-      FullCutFlowRootFile100 = r.TFile.Open("./VetosAndCleaningFiles/results_FIX_NEWSCAN_had_%s_100.root"%(model))
-      NMinus1RootFile100 = r.TFile.Open("./VetosAndCleaningFiles/results_NoMHToverMET_had_%s_100.root"%(model))
+      FullCutFlowRootFile100 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_100.0_bt0.0_MChi-1.root"%(model))
+      NMinus1RootFile100 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_100.0_bt0.0_MChi-1_!%s.root"%(model,cut))
 
 
 
@@ -145,12 +159,13 @@ for cut in Cuts:
           nocuts = threeToTwo(nocuts)
    
 
-          FullCutFlow = GetHist(File = FullCutFlowRootFile100,folder = ["smsScan_AlphaT55_375_475","smsScan_AlphaT55_475_575","smsScan_AlphaT55_575_675",
-           "smsScan_AlphaT55_675_775","smsScan_AlphaT55_775_875","smsScan_AlphaT55_875"],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
+          FullCutFlow = GetHist(File = FullCutFlowRootFile100,folder 
+          =subDirList,hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 
+          2).Clone()
           FullCutFlow = threeToTwo(FullCutFlow)                                                    
 
-          NMinus1 = GetHist(File = NMinus1RootFile100,folder = ["smsScan_AlphaT55_375_475","smsScan_AlphaT55_475_575","smsScan_AlphaT55_575_675",
-      "smsScan_AlphaT55_675_775","smsScan_AlphaT55_775_875","smsScan_AlphaT55_875"],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
+          NMinus1 = GetHist(File = NMinus1RootFile100,folder = subDirList
+          ,hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
 
           NMinus1 = threeToTwo(NMinus1)
 
@@ -389,7 +404,4 @@ for cut in Cuts:
 
           c1.canvas.SetLogy(False)
           
-
-
-
       c1.close()

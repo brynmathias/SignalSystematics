@@ -41,6 +41,23 @@ def GetHist(File = None, folder = None, hist = None, Norm = None, rebin = None):
         else: h.Add(a)
     return h
     
+
+subDirList = [
+    "smsScan_geq1b_geq2j_AlphaT55_375_475",
+    "smsScan_geq1b_geq2j_AlphaT55_475_575",
+    "smsScan_geq1b_geq2j_AlphaT55_575_675",
+    "smsScan_geq1b_geq2j_AlphaT55_675_775",
+    "smsScan_geq1b_geq2j_AlphaT55_775_875",
+    "smsScan_geq1b_geq2j_AlphaT55_875",
+    "smsScan_eq0b_geq2j_AlphaT55_375_475",
+    "smsScan_eq0b_geq2j_AlphaT55_475_575",
+    "smsScan_eq0b_geq2j_AlphaT55_575_675",
+    "smsScan_eq0b_geq2j_AlphaT55_675_775",
+    "smsScan_eq0b_geq2j_AlphaT55_775_875",
+    "smsScan_eq0b_geq2j_AlphaT55_875",
+    
+]
+
     
 def nloTotalXsecMaker(individualXSecs = None):
     out = None
@@ -48,7 +65,7 @@ def nloTotalXsecMaker(individualXSecs = None):
         if out is None: out = h.Clone()
         else: out.Add(h)
     return out
-models = ["T1ttttProto","T1","T2","T2bb","T2tt","T1tttt","T1bbbb"]
+models = ["T2bb",]
 for model in models:
 
     xTitle = None
@@ -79,30 +96,24 @@ for model in models:
     
     c1 = Print("./out/JES_SMS%s.pdf"%(model))
     c1.DoPageNum = False
-    c1.open()
+    
     r.gPad.SetRightMargin(0.175)
     r.gPad.SetLeftMargin(0.15)
     r.gPad.SetTopMargin(0.05)
     r.gPad.SetBottomMargin(0.15)
-    # centalRootFile73 = r.TFile.Open("./JESandLepVetoRootFiles/results_FIX_NEWSCAN_had_T2bb_73.7.root")
-    # centalRootFile86 = r.TFile.Open("./JESandLepVetoRootFiles/results_FIX_NEWSCAN_had_T2bb_86.7.root")
-    if model == "T1ttttProto":
-      centalRootFile100 = r.TFile.Open("./JESandLepVetoRootFiles/results_FIX_NEWSCAN_had_%s_100.root"%(model))
+    centalRootFile73 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_73.7_bt0.0_MChi-1.root"%(model))
+    centalRootFile86 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_86.7_bt0.0_MChi-1.root"%(model))
+    centalRootFile100 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_100.0_bt0.0_MChi-1.root"%(model))
     
-    else:    centalRootFile100 = r.TFile.Open("./JESandLepVetoRootFiles/results_NEWSCAN_JESCEN_had_%s_100.root"%(model))
 
-    # jesPlusRootFile73 = r.TFile.Open("./JESandLepVetoRootFiles/results_had_T2bb_73.7_+ve.root")
-    # jesPlusRootFile86 = r.TFile.Open("./JESandLepVetoRootFiles/results_had_T2bb_86.7_+ve.root")
-    if model == "T1ttttProto":
-      jesPlusRootFile100 = r.TFile.Open("./JESandLepVetoRootFiles/results_FIX_NEWSCAN_had_%s_100_+ve.root"%(model))
-    else:    jesPlusRootFile100 = r.TFile.Open("./JESandLepVetoRootFiles/results_NEWSCAN_had_%s_100_+ve.root"%(model))
+    jesPlusRootFile73 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_73.7_+ve_bt0.0_MChi-1.root"%(model))
+    jesPlusRootFile86 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_86.7_+ve_bt0.0_MChi-1.root"%(model))
+    jesPlusRootFile100 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_100.0_+ve_bt0.0_MChi-1.root"%(model))
+    
 
-    # jesNegRootFile73 = r.TFile.Open("./JESandLepVetoRootFiles/results_had_T2bb_73.7_-ve.root")
-    # jesNegRootFile86 = r.TFile.Open("./JESandLepVetoRootFiles/results_had_T2bb_86.7_-ve.root")
-    if model == "T1ttttProto":
-      jesNegRootFile100 = r.TFile.Open("./JESandLepVetoRootFiles/results_FIX_NEWSCAN_had_%s_100_-ve.root"%(model))
-    else:
-      jesNegRootFile100 = r.TFile.Open("./JESandLepVetoRootFiles/results_NEWSCAN_had_%s_100_-ve.root"%(model))
+    jesNegRootFile73 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_73.7_-ve_bt0.0_MChi-1.root"%(model))
+    jesNegRootFile86 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_86.7_-ve_bt0.0_MChi-1.root"%(model))
+    jesNegRootFile100 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_100.0_-ve_bt0.0_MChi-1.root"%(model))
       
     # jesRanRootFile73 = r.TFile.Open("./results_had_T2bb_73.7_ran.root")
     # jesRanRootFile86 = r.TFile.Open("./results_had_T2bb_86.7_ran.root")
@@ -120,23 +131,27 @@ for model in models:
         # cutsJESRan = []
         nocuts = []
 
-        nocuts = GetHist(File = centalRootFile100,folder = ["smsScan_before",], hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2)
+        nocuts = GetHist(File = centalRootFile100,folder = ["smsScan_before",],
+                         hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2)
         nocuts = threeToTwo(nocuts)
    
-        # cutsHist = GetHist(File = centalRootFile73,folder = ["smsScan_AlphaT55_275_325"],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
-        # cutsHist.Add(GetHist(File = centalRootFile86,folder = ["smsScan_AlphaT55_325_375"],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2))
-        cutsHist = GetHist(File = centalRootFile100,folder = ["smsScan_AlphaT55_375_475","smsScan_AlphaT55_475_575","smsScan_AlphaT55_575_675",
-         "smsScan_AlphaT55_675_775","smsScan_AlphaT55_775_875","smsScan_AlphaT55_875"],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
+        cutsHist = GetHist(File = centalRootFile73,folder = ["smsScan_geq1b_geq2j_AlphaT55_275_325","smsScan_eq0b_geq2j_AlphaT55_275_325",],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
+        cutsHist.Add(GetHist(File = centalRootFile86,folder = ["smsScan_geq1b_geq2j_AlphaT55_325_375","smsScan_eq0b_geq2j_AlphaT55_325_375",],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2))
+        cutsHist = GetHist(File = centalRootFile100,folder = subDirList,hist = 
+                        "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
         cutsHist = threeToTwo(cutsHist)                                                    
-        # cutsJESPlusHist = GetHist(File =   jesPlusRootFile73,folder = ["smsScan_AlphaT55_275_325"],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
-        # cutsJESPlusHist.Add(GetHist(File = jesPlusRootFile86,folder = ["smsScan_AlphaT55_325_375"],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2))
-        cutsJESPlusHist = GetHist(File = jesPlusRootFile100,folder = ["smsScan_AlphaT55_375_475","smsScan_AlphaT55_475_575","smsScan_AlphaT55_575_675",
-    "smsScan_AlphaT55_675_775","smsScan_AlphaT55_775_875","smsScan_AlphaT55_875"],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
+        cutsJESPlusHist = GetHist(File =   jesPlusRootFile73,folder = ["smsScan_geq1b_geq2j_AlphaT55_275_325","smsScan_eq0b_geq2j_AlphaT55_275_325",],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
+        cutsJESPlusHist.Add(GetHist(File = jesPlusRootFile86,folder = ["smsScan_geq1b_geq2j_AlphaT55_325_375","smsScan_eq0b_geq2j_AlphaT55_325_375",],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2))
+        cutsJESPlusHist.Add(GetHist(File = jesPlusRootFile100,folder = 
+        subDirList,hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2))
 
         cutsJESPlusHist = threeToTwo(cutsJESPlusHist)
-        # cutsJESNegHist = GetHist(File =   jesNegRootFile73,folder = ["smsScan_AlphaT55_275_325"],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
-        # cutsJESNegHist.Add(GetHist(File = jesNegRootFile86,folder = ["smsScan_AlphaT55_325_375"],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2))
-        cutsJESNegHist = GetHist(File = jesNegRootFile100,folder = ["smsScan_AlphaT55_375_475","smsScan_AlphaT55_475_575","smsScan_AlphaT55_575_675",                                                         "smsScan_AlphaT55_675_775","smsScan_AlphaT55_775_875","smsScan_AlphaT55_875"],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
+        cutsJESNegHist = GetHist(File =   jesNegRootFile73,folder = ["smsScan_geq1b_geq2j_AlphaT55_275_325","smsScan_eq0b_geq2j_AlphaT55_275_325",],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
+        cutsJESNegHist.Add(GetHist(File = jesNegRootFile86,folder = [    
+"smsScan_geq1b_geq2j_AlphaT55_325_375","smsScan_eq0b_geq2j_AlphaT55_325_375",]
+,hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2))
+        cutsJESNegHist.Add(GetHist(File = jesNegRootFile100,folder = 
+        subDirList,hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2))
         cutsJESNegHist = threeToTwo(cutsJESNegHist)                                       
         
         
@@ -296,8 +311,10 @@ for model in models:
         farBinNorm = farToLine.Integral()
         closeToLineClone = MakeCumu(closeToLine)
         farToLineClone = MakeCumu(farToLine)
-        closeToLineClone.Scale(1./closeBinNom)
-        farToLineClone.Scale(1./farBinNorm)
+        if closeBinNom > 0.:
+            closeToLineClone.Scale(1./closeBinNom)
+        if farBinNorm > 0.:
+            farToLineClone.Scale(1./farBinNorm)
         bin68Close = 0
         for bin in range(closeToLine.GetNbinsX()):
           # print model, closeToLine.GetBinContent(bin) , bin
