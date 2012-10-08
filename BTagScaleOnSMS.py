@@ -94,7 +94,7 @@ for model in models:
     
     
     
-    c1 = Print("./out/JES_SMS%s.pdf"%(model))
+    c1 = Print("./out/BTagScale_SMS%s.pdf"%(model))
     c1.DoPageNum = False
     
     r.gPad.SetRightMargin(0.175)
@@ -106,14 +106,14 @@ for model in models:
     centalRootFile100 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_100.0_bt0.0_MChi-1.root"%(model))
     
 
-    jesPlusRootFile73 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_73.7_+ve_bt0.0_MChi-1.root"%(model))
-    jesPlusRootFile86 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_86.7_+ve_bt0.0_MChi-1.root"%(model))
-    jesPlusRootFile100 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_100.0_+ve_bt0.0_MChi-1.root"%(model))
+    jesPlusRootFile73 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_73.7_bt1.0_MChi-1.root"%(model))
+    jesPlusRootFile86 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_86.7_bt1.0_MChi-1.root"%(model))
+    jesPlusRootFile100 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_100.0_bt1.0_MChi-1.root"%(model))
     
 
-    jesNegRootFile73 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_73.7_-ve_bt0.0_MChi-1.root"%(model))
-    jesNegRootFile86 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_86.7_-ve_bt0.0_MChi-1.root"%(model))
-    jesNegRootFile100 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_100.0_-ve_bt0.0_MChi-1.root"%(model))
+    jesNegRootFile73 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_73.7_bt-1.0_MChi-1.root"%(model))
+    jesNegRootFile86 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_86.7_bt-1.0_MChi-1.root"%(model))
+    jesNegRootFile100 = r.TFile.Open("./rootFiles/sigScan_%s_had_2012_100.0_bt-1.0_MChi-1.root"%(model))
       
     # jesRanRootFile73 = r.TFile.Open("./results_had_T2bb_73.7_ran.root")
     # jesRanRootFile86 = r.TFile.Open("./results_had_T2bb_86.7_ran.root")

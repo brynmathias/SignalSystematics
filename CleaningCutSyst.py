@@ -62,7 +62,7 @@ def nloTotalXsecMaker(individualXSecs = None):
         if out is None: out = h.Clone()
         else: out.Add(h)
     return out
-models = ["T2bb",]#"T2tt","T1tttt","T1bbbb"]
+models = ["T2bb","T1bbbb"]#"T2tt","T1tttt","T1bbbb"]
 Cuts = ["OP_MHToverMET","OP_DeadECALCut"]
 for cut in Cuts:
   for model in models:
@@ -132,7 +132,6 @@ for cut in Cuts:
     
       c1 = Print("./out/%s_SMS%s.pdf"%(cut,model))
       c1.DoPageNum = False
-      c1.open()
       r.gPad.SetRightMargin(0.175)
       r.gPad.SetLeftMargin(0.15)
       r.gPad.SetTopMargin(0.05)
@@ -171,13 +170,13 @@ for cut in Cuts:
 
           Range = NMinus1.GetYaxis().GetNbins()*NMinus1.GetXaxis().GetNbins()
           print Range
-          l =  [i * 25 for i in range(86)]
+          l =  [i * 25 for i in range(200)]
           for a in l:
             for b in l:
               # m_sq (m_gl) - m_LSP >= 175 && m_sq (m_gl) >= 300
               if  a - b <= m_gl_m_m_lsp or a < m_sq :
                 bin = FullCutFlow.FindBin(float(a),float(b))
-                if bin > 2114: continue
+                # if bin > 2114: continue
                 # print bin
                 FullCutFlow.SetBinContent(bin,0.)
                 NMinus1.SetBinContent(bin,0.)          
@@ -317,7 +316,8 @@ for cut in Cuts:
             # print model, farToLine.GetBinContent(bin) , bin
             if farToLineClone.GetBinContent(bin)  <= 0.68:
               bin68far = bin
-
+          farToLineClone.Draw("hist")
+          c1.Print()
           # r.gStyle.SetOptStat(0)
         
           closeToLine68 = r.TH1D(closeToLine)
@@ -335,7 +335,6 @@ for cut in Cuts:
           num.SetNDC()
 
           num.Draw("same")
-        
           c1.Print()
           farToLine68 = r.TH1D(farToLine)
           for bin in range(farToLine.GetNbinsX()):
@@ -396,9 +395,11 @@ for cut in Cuts:
           oneD.Draw("h")
           c1.Print()
           closeToLine.GetXaxis().SetTitle("Fraction of expected signal yield rejected")
+          closeToLine.Scale(1./closeToLine.Integral())
           closeToLine.Draw("h")
           c1.Print()
           farToLine.GetXaxis().SetTitle("Fraction of expected signal yield rejected")
+          farToLine.Scale(1./farToLine.Integral())
           farToLine.Draw("h")
           c1.Print()
 
