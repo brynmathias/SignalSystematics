@@ -65,7 +65,7 @@ def nloTotalXsecMaker(individualXSecs = None):
         if out is None: out = h.Clone()
         else: out.Add(h)
     return out
-models = ["T2bb","T1bbbb"]
+models = ["T1","T2"]
 for model in models:
 
     xTitle = None
@@ -120,16 +120,16 @@ for model in models:
     # jesRanRootFile100 = r.TFile.Open("./results_had_T2bb_100_ran.root")
 
 
-
+    processCrossSections = []
+    cuts = []
+    cutsJESNeg = []
+    cutsJESPlus = []
+    # cutsJESRan = []
+    nocuts = []
     # centalRootFile73.ls()
     # Make cross sections/ efficiencies
     for bin in settings["HTBins"]:        
-        processCrossSections = []
-        cuts = []
-        cutsJESNeg = []
-        cutsJESPlus = []
-        # cutsJESRan = []
-        nocuts = []
+        
 
         nocuts = GetHist(File = centalRootFile100,folder = ["smsScan_before",],
                          hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2)

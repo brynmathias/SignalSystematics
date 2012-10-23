@@ -65,7 +65,7 @@ def nloTotalXsecMaker(individualXSecs = None):
         if out is None: out = h.Clone()
         else: out.Add(h)
     return out
-models = ["T2bb","T1bbbb"]
+models = ["T2bb","T1bbbb","T1","T2"]
 for model in models:
 
     xTitle = None

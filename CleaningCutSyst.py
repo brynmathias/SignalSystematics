@@ -62,7 +62,7 @@ def nloTotalXsecMaker(individualXSecs = None):
         if out is None: out = h.Clone()
         else: out.Add(h)
     return out
-models = ["T2bb","T1bbbb"]#"T2tt","T1tttt","T1bbbb"]
+models = ["T2bb","T1bbbb","T1","T2"]#"T2tt","T1tttt","T1bbbb"]
 Cuts = ["OP_MHToverMET","OP_DeadECALCut"]
 for cut in Cuts:
   for model in models:

@@ -25,19 +25,10 @@ def main():
   """docstring for main"""
   c1 = Print("MHToverMET_data_to_mc.pdf")
   c1.DoPageNum = False
-  c1.open()
-  Data = GetSumHist( File = ["Data.root",], Directories = dirs, Hist = "MHTovMET_all", Col = r.kBlack, Norm = None, LegendText = "Data")
+  Data = GetSumHist( File = ["rootFiles/MuonData.root",], Directories = ['NoMHTovMET',], Hist = "MHTovMET_all", Col = r.kBlack, Norm = None, LegendText = "Data")
   Data.HideOverFlow()
   # Data.hObj.Rebin(5)
-  Mc = GetSumHist( File = ["WJets.root",], Directories = dirs, Hist = "MHTovMET_all", Col = r.kRed, Norm =None, LegendText = "MC")
-  DY = GetSumHist( File = ["DY.root",], Directories = dirs, Hist = "MHTovMET_all", Col = r.kRed, Norm =None, LegendText = "MC")
-  TTBar = GetSumHist( File = ["AllTop.root",], Directories = dirs, Hist = "MHTovMET_all", Col = r.kRed, Norm =None, LegendText = "MC")
-  print "Data integral = %f"%(Data.hObj.Integral())
-  print "WJets integral = %f"%(Mc.hObj.Integral())
-  print "DY integral = %f"%(DY.hObj.Integral())
-  print "TT integral = %f"%(TTBar.hObj.Integral())
-  Mc.hObj.Add(DY.hObj)
-  Mc.hObj.Add(TTBar.hObj)
+  Mc = GetSumHist( File = ["rootFiles/MuonNoSmear.root",], Directories = ['NoMHTovMET',], Hist = "MHTovMET_all", Col = r.kRed, Norm =None, LegendText = "MC")
   Mc.HideOverFlow()
   print "MC Total integral = %f"%(Mc.hObj.Integral())
 
