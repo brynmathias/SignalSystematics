@@ -29,6 +29,7 @@ binCombinations = j1+j2
 
 htBins = [ ('375',), ('275','325'), ('325','375'), ('375','475'), ('475','575'),
         ('575','675'), ('675','775'), ('775','875'), ('875',) ]
+sumBlacklist[ ('375') ]
 
 processStamps =  {
     'T2'     : "pp #rightarrow #tilde{q} #tilde{q}, "
@@ -109,9 +110,10 @@ def makeEffMap(model):
                     jb=selBin, htRange='_'.join(htBin))
             h = histoFile.Get(htBin_dir+"/m0_m12_mChi_noweight")
             h = threeToTwo(h)
-            if Cuts is None:
+            if Cuts is None and htBin not in sumBlacklist:
                 Cuts = h.Clone()
-            else:Cuts.Add(h)
+            elif htBin not in sumBlacklist:
+                Cuts.Add(h)
 
             setHistoOpts(h,model,title)
             h.Divide(noCuts)
