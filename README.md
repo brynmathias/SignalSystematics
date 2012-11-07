@@ -4,8 +4,11 @@ SignalSystemacits
 Scripts to look at systematic studies on signal scans.
 
 Mostly hacky thrown together stuff to make a few plots in root, these include:
-BTag scale uncertianties - a ± one sigma variation around the central value)
+
+BTag scale uncertianties - a ± one sigma variation around the central value
+
 Jet energy scale uncertianties - again a ± one sigma variation around the central jet energy scale value ~ 1% per jet, more for low PT jets
+
 Cleaning cuts - Take out each of MHT/MET, DeadEcal, Lepton Vetos and plot efficiency of these cuts.
 
 EffMap - Makes simple maps of the efficiencys, greatly improved by sam. Mostly un-needed as this is done in:
