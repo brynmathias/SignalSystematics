@@ -27,3 +27,8 @@ pip-log.txt
 .mr.developer.cfg
 
 *.pdf
+
+# Directories
+out/
+VetosAndCleaningFiles/
+rootfiles/
