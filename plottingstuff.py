@@ -79,7 +79,7 @@ def Adder(hist):
   pass
 
 def weightedAdder(hist,weight):
-  if len(hist) != len(weight): print "Weight list and hist list are not the same lenght"
+  if len(hist) != len(weight): print "Weight list and hist list are not the same length"
   out = None
   for h,w in zip(hist,weight):
     if out == None:
@@ -118,7 +118,38 @@ def NloEffHisto(aftercuts,beforecuts,processCrossSections,TotalXsec):
   pass
 
 
+def deltaM(h2):
 
+    minVal = 0.;
+    maxVal = 0.;
+
+    for iY in range(1, 1+h2.GetNbinsY()):
+        for iX in range(1, 1+h2.GetNbinsX()):
+            if h2.GetBinContent(iX, iY) > 0.:
+                val = h2.GetXaxis().GetBinCenter(iX) - h2.GetYaxis().GetBinCenter(iY)
+                if val>maxVal: maxVal=val
+                if val<minVal: minVal=val
+
+    nbins = int((int(maxVal)+10 - int(minVal))/h2.GetYaxis().GetBinWidth(5))
+
+    h2_dM = r.TH2D(h2.GetName(), h2.GetTitle(),
+                    h2.GetNbinsX(), h2.GetXaxis().GetXmin(), h2.GetXaxis().GetXmax(),
+                    nbins, int(minVal), int(maxVal)+10)
+
+    for iY in range(1, 1+h2.GetNbinsY()):
+        for iX in range(1, 1+h2.GetNbinsX()):
+            if h2.GetBinContent(iX, iY) > 0.:
+                content = h2.GetBinContent(iX, iY)
+                ybinVal = h2.GetXaxis().GetBinCenter(iX) - h2.GetYaxis().GetBinCenter(iY)
+                ybin = h2.GetYaxis().FindBin(ybinVal)
+                h2_dM.Fill(int(h2.GetXaxis().GetBinCenter(iX)), int(ybinVal), content)
+
+    h2_dM.GetXaxis().SetTitle("mStop (GeV)")
+    h2_dM.GetYaxis().SetTitle("deltaM (GeV)")
+
+    h2_dM.RebinX(2)
+
+    return h2_dM
 
 
 # def rebinScan(Hist):
