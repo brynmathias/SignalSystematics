@@ -6,19 +6,23 @@ from plottingstuff import *
 from plottingUtils import Print, MakeCumu
 import math
 
-r.gStyle.SetOptStat(0)
+###-------------------------------------------------------------------###
+###-------------------------------------------------------------------###
 
+r.gStyle.SetOptStat(0)
 r.TH1.SetDefaultSumw2(1)
 r.TH2.SetDefaultSumw2(1)
 
 settings = {
     "mode":["JES", "ISR"][0],
-    "inclHT":[False, True][1],
+    "inclHT":[False, True][0],
     "HTBins":["275_325", "325_375", "375_475", "475_575", "575_675", "675_775", "775_875", "875"],
     "deltaM":[False, True][0],
     "jMulti":["le3j", "ge4j", "eq2j", "eq3j"][0],
-    "bMulti":["eq0b", "eq1b"][0]
+    "bMulti":["eq0b", "eq1b"][0:2]
 }
+
+###-------------------------------------------------------------------###
 
 def threeToTwo(h3) :
     name = h3.GetName()
@@ -40,9 +44,11 @@ def threeToTwo(h3) :
 
     return h2
 
+###-------------------------------------------------------------------###
+
 def GetHist(File = None, folder = None, hist = None, Norm = None, rebinX = None, rebinY = None):
     h = None
-    print File.GetName()
+
     for f in folder:
         directory = File.Get(f)
         a = directory.Get(hist)
@@ -52,15 +58,7 @@ def GetHist(File = None, folder = None, hist = None, Norm = None, rebinX = None,
 
     return h  
 
-subDirListHigh = [
-    "smsScan_%s_%s_AlphaT55_375_475"%(settings["bMulti"], settings["jMulti"]),
-    "smsScan_%s_%s_AlphaT55_475_575"%(settings["bMulti"], settings["jMulti"]),
-    "smsScan_%s_%s_AlphaT55_575_675"%(settings["bMulti"], settings["jMulti"]),
-    "smsScan_%s_%s_AlphaT55_675_775"%(settings["bMulti"], settings["jMulti"]),
-    "smsScan_%s_%s_AlphaT55_775_875"%(settings["bMulti"], settings["jMulti"]),
-    "smsScan_%s_%s_AlphaT55_875"%(settings["bMulti"], settings["jMulti"]),
-]
-
+###-------------------------------------------------------------------###
     
 def nloTotalXsecMaker(individualXSecs = None):
     out = None
@@ -69,8 +67,53 @@ def nloTotalXsecMaker(individualXSecs = None):
         else: out.Add(h)
     return out
 
+###-------------------------------------------------------------------###
+
+def getRootDirs():
+
+    dirs = []
+    bMulti = settings["bMulti"]
+    jMulti = settings["jMulti"]
+
+    ## convert individual string selections to lists for iteration
+    if "str" in str(type(bMulti)):
+        bMulti = [bMulti]
+    if "str" in str(type(jMulti)):
+        jMulti = [jMulti]
+
+    for jM in jMulti:
+        for bM in bMulti:
+            for ht in settings["HTBins"]:
+                dirs.append("smsScan_%s_%s_AlphaT55_%s"%(bM, jM, ht))
+
+    return dirs
+
+###-------------------------------------------------------------------###
+
+def getOutFile(model = "", htbin="", format=""):
+
+    bMulti = settings["bMulti"]
+    jMulti = settings["jMulti"]
+
+    ## convert individual string selections to lists for iteration
+    if "str" in str(type(bMulti)):
+        bMulti = [bMulti]
+    if "str" in str(type(jMulti)):
+        jMulti = [jMulti]
+
+    if format == "txt":
+        outName = "%s_%s_systOutput_%s_%s.txt"%(settings["mode"], model, "_".join(bMulti), "_".join(jMulti))
+    elif format == "pdf":
+        outName = "%s_%s_%s_%s_%s%s.pdf"%(settings["mode"], model, "_".join(bMulti), "_".join(jMulti), 
+            htbin, "_dM" if settings["deltaM"] else "")
+
+    return "./out/"+outName
+
+###-------------------------------------------------------------------###
+###-------------------------------------------------------------------###
 
 models = ["T2cc"]#,"T2bb","T1bbbb","T1","T2"]
+
 for model in models:
 
     xTitle = None
@@ -127,13 +170,9 @@ for model in models:
       HTList = ["incl"]
     else:
       HTList = settings["HTBins"]
-      oF = open("out/%s_%s_syst_output_%s_%s.txt"%(settings["mode"], model, settings["bMulti"], settings["jMulti"]), 'w')
+      oF = open(getOutFile(model=model, format="txt"), 'w')
 
     for htbin in HTList:
-
-        subDirList = [
-            "smsScan_%s_%s_AlphaT55"%(settings["bMulti"], settings["jMulti"]),
-        ]
 
         processCrossSections = []
         cuts = []
@@ -141,10 +180,6 @@ for model in models:
         cutsJESPlus = []
         # cutsJESRan = []
         nocuts = []
-
-        if not settings["inclHT"]:
-          for i in range( len(subDirList) ):
-            subDirList[i] = subDirList[i]+"_"+htbin
 
         suf = ""
         if "275_" in htbin:
@@ -154,13 +189,8 @@ for model in models:
         else:
           suf="100"
 
-        fileOut = ""
-        if settings["deltaM"]:
-            fileOut = "./out/%s_SMS%s_%s_%s_%sdM.pdf"%(settings["mode"], model, htbin, settings["bMulti"], settings["jMulti"])
-        else:
-            fileOut = "./out/%s_SMS%s_%s_%s_%s.pdf"%(settings["mode"], model, htbin, settings["bMulti"], settings["jMulti"])
 
-        c1 = Print(fileOut)
+        c1 = Print( getOutFile(model=model, htbin=htbin, format="pdf") )
         c1.DoPageNum = False
 
         r.gPad.SetRightMargin(0.175)
@@ -173,21 +203,22 @@ for model in models:
         
         if settings["inclHT"]:
 
-          cutsHist = GetHist(File = centalRootFile73,folder = ["smsScan_%s_%s_AlphaT55_275_325"%(settings["bMulti"], settings["jMulti"]),],hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4).Clone()
-          cutsHist.Add(GetHist(File = centalRootFile86,folder = ["smsScan_%s_%s_AlphaT55_325_375"%(settings["bMulti"], settings["jMulti"]),],hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4))
-          cutsHist.Add(GetHist(File = centalRootFile100,folder = subDirListHigh,hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 2))
+          cutsHist = GetHist(File = centalRootFile73,folder = getRootDirs()[0:1],hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4).Clone()
+          cutsHist.Add(GetHist(File = centalRootFile86,folder = getRootDirs()[1:2],hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4))
+          cutsHist.Add(GetHist(File = centalRootFile100,folder = getRootDirs()[2:],hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 2))
 
-          cutsJESPlusHist = GetHist(File =   jesPlusRootFile73,folder = ["smsScan_%s_%s_AlphaT55_275_325"%(settings["bMulti"], settings["jMulti"]),],hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4).Clone()
-          cutsJESPlusHist.Add(GetHist(File = jesPlusRootFile86,folder = ["smsScan_%s_%s_AlphaT55_325_375"%(settings["bMulti"], settings["jMulti"]),],hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4))
-          cutsJESPlusHist.Add(GetHist(File = jesPlusRootFile100,folder = subDirListHigh,hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4))
+          cutsJESPlusHist = GetHist(File =   jesPlusRootFile73,folder = getRootDirs()[0:1],hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4).Clone()
+          cutsJESPlusHist.Add(GetHist(File = jesPlusRootFile86,folder = getRootDirs()[1:2],hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4))
+          cutsJESPlusHist.Add(GetHist(File = jesPlusRootFile100,folder = getRootDirs()[2:],hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4))
           
-          cutsJESNegHist = GetHist(File =   jesNegRootFile73,folder = ["smsScan_%s_%s_AlphaT55_275_325"%(settings["bMulti"], settings["jMulti"]),],hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4).Clone()
-          cutsJESNegHist.Add(GetHist(File = jesNegRootFile86,folder = ["smsScan_%s_%s_AlphaT55_325_375"%(settings["bMulti"], settings["jMulti"]),],hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4))
-          cutsJESNegHist.Add(GetHist(File = jesNegRootFile100,folder = subDirListHigh,hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4))
+          cutsJESNegHist = GetHist(File =   jesNegRootFile73,folder = getRootDirs()[0:1],hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4).Clone()
+          cutsJESNegHist.Add(GetHist(File = jesNegRootFile86,folder = getRootDirs()[1:2],hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4))
+          cutsJESNegHist.Add(GetHist(File = jesNegRootFile100,folder = getRootDirs()[2:],hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4))
         else:
-          cutsHist = GetHist(File = eval("centalRootFile%s"%suf),folder = subDirList, hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4).Clone()
-          cutsJESPlusHist = GetHist(File =   eval("jesPlusRootFile%s"%suf),folder = subDirList, hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4).Clone()
-          cutsJESNegHist = GetHist(File =   eval("jesNegRootFile%s"%suf),folder = subDirList, hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4).Clone()
+          d = [getRootDirs()[i] for i,x in enumerate(getRootDirs()) if htbin in x]
+          cutsHist = GetHist(File = eval("centalRootFile%s"%suf),folder = d, hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4).Clone()
+          cutsJESPlusHist = GetHist(File =   eval("jesPlusRootFile%s"%suf),folder = d, hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4).Clone()
+          cutsJESNegHist = GetHist(File =   eval("jesNegRootFile%s"%suf),folder = d, hist = "m0_m12_mChi_noweight", Norm = None ,rebinX= 4).Clone()
 
         # convert to TH2 plots
         cutsHist = threeToTwo(cutsHist)
@@ -247,7 +278,9 @@ for model in models:
         TotalEff.Divide(nocuts)
         #TotalEff.GetZaxis().SetRangeUser(0., 1.)
         maxVal = TotalEff.GetMaximum()
+        TotalEff.SetMaximum(0.0025)
         
+
         #TotalEff.Scale(100.)
         #r.gStyle.SetPaintTextFormat("0.2f %%");
         #TotalEff.SetMarkerSize(1.4)
@@ -255,6 +288,19 @@ for model in models:
         #TotalEff.Draw("COLZ TEXT40")
         TotalEff.Draw("COLZ")
         # TotalEff.Scale(100.)
+        
+        tot = 0.
+        ctr = 0
+        for i in range( TotalEff.GetNbinsX()*TotalEff.GetNbinsY() ):
+            val = TotalEff.GetBinContent(i)
+            if val>0.:
+                tot+=val
+                ctr+=1
+
+        num0 = r.TLatex(0.17,0.85,"Average efficiency: %.3f%%"%(float(tot/ctr)*100))
+        num0.SetNDC()
+        num0.Draw("same")
+
         c1.Print()
         # TotalEff.Scale(1./100.)
 
@@ -413,7 +459,7 @@ for model in models:
         for bin in farBins:
           if bin in closeBins: 
             closeBins.remove(bin)
-            print "Bin %d is in both near and Far!!!!!!!"%bin
+            if "T2cc" not in model: print "Bin %d is in both near and Far!!!!!!!"%bin
         TestMe = r.TH2D(EffOverJESPlus)
         TestMe.SetMinimum(0.)
         TestMe.SetMaximum(1.)
