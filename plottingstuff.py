@@ -147,7 +147,7 @@ def deltaM(h2):
     h2_dM.GetXaxis().SetTitle("mStop (GeV)")
     h2_dM.GetYaxis().SetTitle("deltaM (GeV)")
 
-    h2_dM.RebinX(2)
+    #h2_dM.RebinX(2)
 
     return h2_dM
 
