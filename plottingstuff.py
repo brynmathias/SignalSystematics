@@ -41,8 +41,8 @@ def GetHist(DataSetName = None,folder = None ,hist = "myHist",col = 0,norm = Non
     Hist.SetLineColor(col) #set colour
     if norm != None:
        Hist.Scale(norm) #if not data normilse to the data by lumi, MC is by default weighted to 100pb-1, if you have changed this change here!
-    if rebin != None:
-       Hist.Rebin2D(rebin,rebin)
+    #if rebin != None:
+    #   Hist.Rebin2D(rebin,rebin)
     return Hist
 
 def GetHistFromOpenFile(DataSetName = None,folder = None ,hist = "myHist",col = 0,norm = None ,Legend = "hist", rebin = None):
@@ -59,8 +59,8 @@ def GetHistFromOpenFile(DataSetName = None,folder = None ,hist = "myHist",col = 
     Hist.SetLineColor(col) #set colour
     if norm != None:
        Hist.Scale(norm) #if not data normilse to the data by lumi, MC is by default weighted to 100pb-1, if you have changed this change here!
-    if rebin != None:
-       Hist.Rebin2D(rebin,rebin)
+    #if rebin != None:
+    #   Hist.Rebin2D(rebin,rebin)
     return Hist
 
 
