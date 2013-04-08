@@ -2,23 +2,26 @@
 
 import ROOT as r
 from plottingstuff import *
-from plottingUtils import Print, MakeCumu
+from plottingUtils import Print, MakeCumu, SetBatch
 import math
 
 ###-------------------------------------------------------------------###
 ###-------------------------------------------------------------------###
 
+r.gROOT.SetBatch(r.kTRUE)
 r.gStyle.SetOptStat(0)
 r.TH1.SetDefaultSumw2(1)
 r.TH2.SetDefaultSumw2(1)
 
+
 settings = {
-    "mode": ["JES", "ISR", "bTag"][2],
+    "model": ["T2cc", "T2"][0],
+    "mode": ["JES", "ISR", "bTag"][0],
     "inclHT": [False, True][1],
     "HTBins": ["275_325", "325_375", "375_475", "475_575", "575_675", "675_775", "775_875", "875"],
     "deltaM": [False, True][0],
-    "jMulti": ["le3j", "ge4j", "eq2j", "eq3j"][1],
-    "bMulti": ["eq0b", "eq1b"][0]
+    "jMulti": ["le3j", "ge4j", "eq2j", "eq3j", "ge2j"][1],
+    "bMulti": ["eq0b", "eq1b", "ge0b"][1]
 }
 
 ###-------------------------------------------------------------------###
@@ -102,9 +105,20 @@ def getOutFile(model="", htbin="", format=""):
     return "./out/"+outName
 
 ###-------------------------------------------------------------------###
+
+
+def getPointVal(hist=None, xval=0., yval=0):
+
+    if hist is None:
+        return 0
+
+    bin = hist.FindBin(xval, yval)
+
+    return math.fabs(hist.GetBinContent(bin))
+
+###-------------------------------------------------------------------###
 ###-------------------------------------------------------------------###
 
-model = "T2cc"
 
 xTitle = "m_{stop} (GeV)"
 
@@ -122,53 +136,53 @@ else:
 if settings["mode"] != "bTag":
 
     centalRootFile73 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_73.7_%sbt0.0_MChi-1.0.root" %
-                                    (model+"_v5", settings["mode"], model, ins))
+                                    (settings["model"]+"_v5", settings["mode"], settings["model"], ins))
     centalRootFile86 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_86.7_%sbt0.0_MChi-1.0.root" %
-                                    (model+"_v5", settings["mode"], model, ins))
+                                    (settings["model"]+"_v5", settings["mode"], settings["model"], ins))
     centalRootFile100 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_100.0_%sbt0.0_MChi-1.0.root" %
-                                    (model+"_v5", settings["mode"], model, ins))
+                                    (settings["model"]+"_v5", settings["mode"], settings["model"], ins))
 
     jesPlusRootFile73 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_73.7_%s+ve_bt0.0_MChi-1.0.root" %
-                                    (model+"_v5", settings["mode"], model, ins))
+                                    (settings["model"]+"_v5", settings["mode"], settings["model"], ins))
     jesPlusRootFile86 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_86.7_%s+ve_bt0.0_MChi-1.0.root" %
-                                    (model+"_v5", settings["mode"], model, ins))
+                                    (settings["model"]+"_v5", settings["mode"], settings["model"], ins))
     jesPlusRootFile100 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_100.0_%s+ve_bt0.0_MChi-1.0.root" %
-                                     (model+"_v5", settings["mode"], model, ins))
+                                     (settings["model"]+"_v5", settings["mode"], settings["model"], ins))
 
     jesNegRootFile73 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_73.7_%s-ve_bt0.0_MChi-1.0.root" %
-                                    (model+"_v5", settings["mode"], model, ins))
+                                    (settings["model"]+"_v5", settings["mode"], settings["model"], ins))
     jesNegRootFile86 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_86.7_%s-ve_bt0.0_MChi-1.0.root" %
-                                    (model+"_v5", settings["mode"], model, ins))
+                                    (settings["model"]+"_v5", settings["mode"], settings["model"], ins))
     jesNegRootFile100 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_100.0_%s-ve_bt0.0_MChi-1.0.root" %
-                                    (model+"_v5", settings["mode"], model, ins))
+                                    (settings["model"]+"_v5", settings["mode"], settings["model"], ins))
 else:
     centalRootFile73 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_73.7_%sbt0.0_MChi-1.0.root" %
-                                    (model+"_v5", settings["mode"], model, ins))
+                                    (settings["model"]+"_v1", settings["mode"], settings["model"], ins))
     centalRootFile86 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_86.7_%sbt0.0_MChi-1.0.root" %
-                                    (model+"_v5", settings["mode"], model, ins))
+                                    (settings["model"]+"_v1", settings["mode"], settings["model"], ins))
     centalRootFile100 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_100.0_%sbt0.0_MChi-1.0.root" %
-                                    (model+"_v5", settings["mode"], model, ins))
+                                    (settings["model"]+"_v1", settings["mode"], settings["model"], ins))
 
-    jesPlusRootFile73 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_73.7_%sbt1.0_MChi-1.0.root" %
-                                    (model+"_v5", settings["mode"], model, ins))
-    jesPlusRootFile86 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_86.7_%sbt1.0_MChi-1.0.root" %
-                                    (model+"_v5", settings["mode"], model, ins))
-    jesPlusRootFile100 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_100.0_%sbt1.0_MChi-1.0.root" %
-                                     (model+"_v5", settings["mode"], model, ins))
+    jesPlusRootFile73 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_73.7_%sbt2.0_MChi-1.0.root" %
+                                    (settings["model"]+"_v1", settings["mode"], settings["model"], ins))
+    jesPlusRootFile86 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_86.7_%sbt2.0_MChi-1.0.root" %
+                                    (settings["model"]+"_v1", settings["mode"], settings["model"], ins))
+    jesPlusRootFile100 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_100.0_%sbt2.0_MChi-1.0.root" %
+                                     (settings["model"]+"_v1", settings["mode"], settings["model"], ins))
 
-    jesNegRootFile73 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_73.7_%sbt-1.0_MChi-1.0.root" %
-                                    (model+"_v5", settings["mode"], model, ins))
-    jesNegRootFile86 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_86.7_%sbt-1.0_MChi-1.0.root" %
-                                    (model+"_v5", settings["mode"], model, ins))
-    jesNegRootFile100 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_100.0_%sbt-1.0_MChi-1.0.root" %
-                                    (model+"_v5", settings["mode"], model, ins))
+    jesNegRootFile73 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_73.7_%sbt-2.0_MChi-1.0.root" %
+                                    (settings["model"]+"_v1", settings["mode"], settings["model"], ins))
+    jesNegRootFile86 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_86.7_%sbt-2.0_MChi-1.0.root" %
+                                    (settings["model"]+"_v1", settings["mode"], settings["model"], ins))
+    jesNegRootFile100 = r.TFile.Open("./rootFiles/%s/%s/sigScan_%s_had_2012_100.0_%sbt-2.0_MChi-1.0.root" %
+                                    (settings["model"]+"_v1", settings["mode"], settings["model"], ins))
 
 HTList = []
 if settings["inclHT"]:
     HTList = ["incl"]
 else:
     HTList = settings["HTBins"]
-    oF = open(getOutFile(model=model, format="txt"), 'w')
+    oF = open(getOutFile(model=settings["model"], format="txt"), 'w')
 
 for htbin in HTList:
 
@@ -187,8 +201,10 @@ for htbin in HTList:
     else:
         suf = "100"
 
-    c1 = Print(getOutFile(model=model, htbin=htbin, format="pdf"))
+    c1 = Print(getOutFile(model=settings["model"], htbin=htbin, format="pdf"))
     c1.DoPageNum = False
+
+    r.gROOT.SetBatch(r.kTRUE)
 
     r.gPad.SetRightMargin(0.175)
     r.gPad.SetLeftMargin(0.15)
@@ -243,8 +259,8 @@ for htbin in HTList:
         mini = 0.85
         maxi = 1.15
     else:
-        mini = 0.75
-        maxi = 1.25
+        mini = 0.70
+        maxi = 1.30
 
     c1.canvas.SetLogz()
     offset = 1.1
@@ -372,6 +388,9 @@ for htbin in HTList:
     EffOverJESNegClone.Draw("COLZ")
     #EffOverJESNegClone.GetZaxis().SetRangeUser(-.14, .14)
     c1.Print()
+
+    print "200-190: %.4f" % ((getPointVal(EffOverJESPlusClone, 200., 190.)+getPointVal(EffOverJESNegClone, 200., 190.))/2.)
+    print "200-120: %.4f" % ((getPointVal(EffOverJESPlusClone, 200., 120.)+getPointVal(EffOverJESNegClone, 200., 120.))/2.)
 
     oneDJesMinus = r.TH1D("oneDJesMinus", "", 500, 0., 0.5)
     oneDJesPlus = r.TH1D("oneDJesPlus", "", 500, 0., 0.5)
