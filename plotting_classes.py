@@ -74,6 +74,13 @@ class effMap(object):
 class systMap(object):
 	'''Simple systematic plotting'''
 	
+	### TO-DO ###
+	# 1. implement deltaM plotting
+	# 2. top-level pageNum plotting switch?
+	# 3. text plotting (add plotString variable) - DONE
+	# 4. Add stats print out to each plot - DONE
+	# 5. Cap values in each plot
+
 	def __init__(self, up = None, down = None, central = None, nocuts = None, test = "",
 					model = ""):
 
@@ -99,6 +106,7 @@ class systMap(object):
 					'z':[],
 		}
 		self._logZ = False
+		self._plotString = "colz"
 		self._fileTag = "jmulti_bmulti"
 		self._nBins = self._yieldPlots['central'].GetNbinsX()* \
 						self._yieldPlots['central'].GetNbinsY() + 1000
@@ -108,6 +116,7 @@ class systMap(object):
 		try:
 			self._plotSpec = pdets.modelPlotDetails[self._model]
 		except KeyError:
+			print ">>> Warning: systMap: Model details not found. Using default values."
 			self._plotSpec = {
 					'xRange': [0., 1000.],
 					'yRange': [0., 1000.],
@@ -121,6 +130,7 @@ class systMap(object):
 		try:
 			self._plotSpec['zRange'] = pdets.systZRanges[self._test]
 		except KeyError:
+			print ">>> Warning: systMap: Test zRange not found. Using default values."
 			self._plotSpec['zRange'] = [0.9,1.1]
 
 		self.makeSystPlots()
@@ -176,9 +186,17 @@ class systMap(object):
 		self._syst = effMap(tmp_hist)
 		del tmp_hist
 
-
-	def print_all(self, label = ""):
+	def print_all(self, label = "", plotText = False):
 		'''print syst output plots'''
+
+		if plotText:
+			if self._model not in ["T2cc", "T2_4body"]:
+				print ">>> Warning: systMap: print_all: Text plot will look shit for this model,"
+				print "    so it will be turned off. Remember, looks are everything in Particle"
+				print "    Physics."
+			else:
+				self._plotString = "colztext"
+				r.gStyle.SetPaintTextFormat("0.4f");
 
 		# create instance of a multi page PDF
 		pdf0 = multiPagePDF(outFileName = "banana.pdf", title = "Systematics - %s" % label)
@@ -188,29 +206,57 @@ class systMap(object):
 
 		# draw each variation
 		for key in ["central", "up", "up_change", "down", "down_change"]:
-			self.draw_plot(self._effs[key]._hist, pdf0, "Efficiency %s %s - %s" % (self._test,
-							key, label), "Acceptance change" if "change" in key else "Acceptance",
+			self.draw_plot(self._effs[key],
+							pdf0,
+							"Efficiency %s %s - %s" % (self._test, key, label),
+							"Acceptance",
 							1. if "change" in key else 0.)
 
 		# draw total systematic
-		self.draw_plot(self._syst._hist, pdf0, "%s Systematic - %s" % (self._test, label), 
-						"Systematic Value", True)
+		self.draw_plot(self._syst,
+						pdf0,
+						"%s Systematic - %s" % (self._test, label), 
+						"Systematic Value",
+						1.)
 
 		pdf0.close()
 
-	def draw_plot(self, hist = None, pdfFile = None, title = "", zTitle = "", shiftZ = 0.):
+	def draw_plot(self, effMap = None, pdfFile = None, title = "", zTitle = "", shiftZ = 0.):
 		'''draw a single plot on a single page of pdfFile'''
 
-		hist.Draw("colz")
+		hist = effMap._hist.Clone()
+		hist.Draw(self._plotString)
 		hist.SetTitle(title)
-		hist.GetZaxis().SetTitle(zTitle)
+		if "change" in title:
+			hist.GetZaxis().SetTitle(zTitle + " change")
+		else:
+			hist.GetZaxis().SetTitle(zTitle)
 		self.setDetails(hist, shiftZ)
+
+		if "text" in self._plotString:
+			hist.SetMarkerSize(0.8)
+
+		# draw all the stats numbers
+		num0 = r.TLatex(0.151,0.8,"#scale[0.6]{avg = %.4f}" % effMap._mean)
+		num0.SetNDC()
+		num0.Draw("same")
+
+		num1 = r.TLatex(0.15,0.77,"#scale[0.6]{RMS= %.4f}" % effMap._rms)
+		num1.SetNDC()
+		num1.Draw("same")
+
+		num2 = r.TLatex(0.15,0.74,"#scale[0.6]{min = %.4f}" % effMap._min)
+		num2.SetNDC()
+		num2.Draw("same")
+
+		num3 = r.TLatex(0.15,0.71,"#scale[0.6]{max = %.4f}" % effMap._max)
+		num3.SetNDC()
+		num3.Draw("same")
 
 		pdfFile.AddPage()
 
-
-
 	def setDetails(self, hist=None, zoffset=0.):
+		'''set the ranges, titles, and title text specs of a plot'''
 
 		hist.GetXaxis().SetRangeUser(self._plotSpec['xRange'][0], self._plotSpec['xRange'][1])
 		hist.GetXaxis().SetTitle(self._plotSpec['xTitle'])
@@ -225,9 +271,8 @@ class systMap(object):
 		if zoffset:
 			hist.GetZaxis().SetRangeUser(self._plotSpec['zRange'][0]-zoffset,
 											self._plotSpec['zRange'][1]-zoffset)
-		hist.GetZaxis().SetTitleOffset(1.0)
+		hist.GetZaxis().SetTitleOffset(0.95)
 		hist.GetZaxis().SetTitleSize(0.05)
-
 
 	def __del__(self):
 		'''destructor to deal with effMap objects'''
@@ -246,6 +291,7 @@ class multiPagePDF(object):
 		self._fName = outFileName
 		self._pageNums = True
 		self._doName = True
+		self._analyst = "Chris Lucas"
 		self._title = title
 		self._pageCtr = 1 #initiate page numbers
 		self.makeTitlePage()
@@ -259,7 +305,7 @@ class multiPagePDF(object):
 		title_text.Draw("same")
 
 		if self._doName:
-			name_text = r.TLatex(0.09, 0.2, "Analyst: Chris Lucas")
+			name_text = r.TLatex(0.09, 0.2, "Analyst: %s" % self._analyst)
 			name_text.SetNDC()
 			name_text.Draw("same")
 
@@ -276,14 +322,14 @@ class multiPagePDF(object):
 
 	def AddPage(self):
 		'''Add page with canvas drawn and page number'''
-	    num = r.TLatex(0.97,0.025,"%d"%(self._pageCtr))
-	    num.SetNDC()
-	    if self._pageNums: num.Draw("same")
-	    self._canv.Print(self._fName)
-	    self._pageCtr += 1
-	    pass
+		num = r.TLatex(0.97,0.025,"%d"%(self._pageCtr))
+		num.SetNDC()
+		if self._pageNums: num.Draw("same")
+		self._canv.Print(self._fName)
+		self._pageCtr += 1
+		pass
 
 	def close(self):
 		'''close the pdf file'''
-	    self._canv.Print(self._fName+"]")
-	    pass
+		self._canv.Print(self._fName+"]")
+		pass
