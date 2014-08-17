@@ -17,14 +17,14 @@ r.TH2.SetDefaultSumw2(1)
 
 
 settings = {
-    "model":    ["T2cc", "T2", "T2_4body"][-1],
+    "model":    ["T2cc", "T2", "T2_4body", "T2tt"][-1],
     "version":  5,
-    "mode":     ["JES", "ISR", "bTag", "LeptonVeto", "DeadECAL", "MHT_MET", "3jet"][:-1],
+    "mode":     ["JES", "ISR", "bTag", "LeptonVeto", "DeadECAL", "MHT_MET", "3jet"],
     "inclHT":   [False, True][1],
     "HTBins":   ["200_275", "275_325", "325_375", "375_475", "475_575", "575_675", "675_775", "775_875", "875_975", "975_1075", "1075"],
-    "deltaM":   [False, True][0],
-    "jMulti":   ["le3j", "ge4j", "ge2j"][-1:],
-    "bMulti":   ["eq0b", "eq1b", "eq2b", "ge0b"][-1:],
+    "deltaM":   [False, True][1],
+    "jMulti":   ["le3j", "ge4j", "ge2j"][:2],
+    "bMulti":   ["eq0b", "eq1b", "eq2b", "eq3b", "ge0b"][:4],
     "text_plot":[False, True][1]
 }
 
@@ -664,12 +664,27 @@ def make_syst_map_three(bMulti = "", jMulti = ""):
     count = 0
 
     # loop over specific mass points and find corresponding bins, as pdf plot is different binning scheme
+    stop_masses = []
+    split_masses = []
+
     if settings["model"] == "T2cc":
         stop_masses = [100.+25.*i for i in range(11)]
         split_masses = [5., 10., 20., 30., 40., 60., 80.]
     elif settings["model"] == "T2_4body":
         stop_masses = [100.+25.*i for i in range(12)]
         split_masses = [10.*i for i in range(1,9)]
+    else:
+        for x_bin in range(1,my_syst_hists[0].GetNbinsX()+1):
+            for y_bin in range(1,my_syst_hists[0].GetNbinsY()+1):
+                if my_syst_hists[0].GetBinContent(x_bin,y_bin) > 0.:
+                    stop_mass = my_syst_hists[0].GetXaxis().GetBinLowEdge(x_bin)
+                    if stop_mass not in stop_masses:
+                        stop_masses.append(stop_mass)
+                    split_mass = my_syst_hists[0].GetXaxis().GetBinLowEdge(x_bin) - my_syst_hists[0].GetYaxis().GetBinLowEdge(y_bin)
+                    if split_mass not in split_masses:
+                        split_masses.append(split_mass)
+        print stop_masses
+        print split_masses
 
     for mstop in stop_masses:
         for mdiff in split_masses:
@@ -727,11 +742,13 @@ def make_syst_map_three(bMulti = "", jMulti = ""):
     num.SetNDC()
     num.Draw("same")
 
+    print "\t>> Total: Avg=%.3f, Min=%.3f, Max=%.3f"%(avg_val, min_val, max_val)
+
     c_total.Print(out_name)
 
     # write the output rootfile
     out_root_file = r.TFile(out_name.replace(".pdf", ".root"), "RECREATE")
-    total_syst_hist.SetName(out_name.replace(".pdf","").split("/")[-1])
+    total_syst_hist.SetName(out_name.replace(".pdf","").replace("_v%d"%settings["version"], "").split("/")[-1])
     total_syst_hist.Write()
     
     out_root_file.Close()
