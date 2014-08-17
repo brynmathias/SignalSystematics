@@ -6,6 +6,7 @@ from plottingstuff import *
 from plottingUtils import Print, MakeCumu
 import math
 
+r.gROOT.SetBatch(r.kTRUE)
 
 def threeToTwo(h3) :
     name = h3.GetName()
@@ -22,20 +23,24 @@ def threeToTwo(h3) :
     h2.GetZaxis().SetTitle(h3.GetZaxis().GetTitle())
     return h2
 
-
 settings = {
-    "HTBins":["a"],
+    "syst": ["leptVeto", "deadEcal", "mhtmet"][0:3], # must be an array!
+    "HTBins":["275_325", "325_375", "375_475", "475_575", "575_675", "675_775", "775_875", "875"],
     "SubProcesses":["nn","ns","ng","ss","ll","sb","tb","gg","bb","sg"],
-    "deltaM":[False, True][0]
+    "deltaM":[False, True][0],
+    "jMulti": ["le3j", "ge4j", "eq2j", "eq3j", "ge2j"][0],
+    "bMulti": ["eq0b", "eq1b", "ge0b"][0]
 }
+
 def GetHist(File = None, folder = None, hist = None, Norm = None, rebin = None):
     h = None
     for f in folder:
-        directory = File.Get(f)
-        a = directory.Get(hist)
-        if h is None:
-            h = a.Clone()
-        else: h.Add(a)
+      directory = File.Get(f)
+      a = directory.Get(hist)
+      if h is None:
+          h = a.Clone()
+      else:
+        h.Add(a)
     return h
     
     
@@ -46,10 +51,28 @@ def nloTotalXsecMaker(individualXSecs = None):
         else: out.Add(h)
     return out
 
+def getRootDirs():
+
+    dirs = []
+    bMulti = settings["bMulti"]
+    jMulti = settings["jMulti"]
+
+    ## convert individual string selections to lists for iteration
+    if "str" in str(type(bMulti)):
+        bMulti = [bMulti]
+    if "str" in str(type(jMulti)):
+        jMulti = [jMulti]
+
+    for jM in jMulti:
+        for bM in bMulti:
+            for ht in settings["HTBins"]:
+                dirs.append("smsScan_%s_%s_AlphaT55_%s" % (bM, jM, ht))
+
+    return dirs
 
 models = ["T2cc",]#"T1ttttProto",]#"T2bb","T2tt","T1tttt","T1bbbb"]
-Cuts = [1,]
-for cut in Cuts:
+
+for cut in settings["syst"]:
   for model in models:
 
       xTitle = None
@@ -124,11 +147,21 @@ for cut in Cuts:
         m_gl_m_m_lsp = 175.
         m_sq = 300.
 
+      # set some limits for plotting ranges
+      if "mhtmet" in cut:
+        jmax = 0.4
+      elif "leptVeto" in cut:
+        jmax = 0.03 
+      elif "deadEcal" in cut:
+        jmax = 0.3
+      else:
+        jmax = 0.1
+
       outName = ""
       if settings["deltaM"]:
-        outName = "./out/LepVeto_SMS%s_dM.pdf"%(model)
+        outName = "./out/LepVeto_SMS%s_%s_dM.pdf"%(model, cut)
       else:
-        outName = "./out/LepVeto_SMS%s.pdf"%(model)
+        outName = "./out/LepVeto_SMS%s_%s.pdf"%(model, cut)
     
       c1 = Print(outName)
       c1.DoPageNum = False
@@ -138,12 +171,12 @@ for cut in Cuts:
       r.gPad.SetTopMargin(0.05)
       r.gPad.SetBottomMargin(0.15)
 
-      FullCutFlowRootFile100 = r.TFile.Open("./VetosAndCleaningFiles/NoFilter_Comb_v2/sigScan_%s_had_2012_100.0_bt0.0_MChi-1.0.root"%(model))
-      NMinus1RootFile100 = r.TFile.Open("./VetosAndCleaningFiles/NoFilter_Comb_v2/sigScan_%s_had_2012_100.0_bt0.0_MChi-1.0_noLeptVeto.root"%(model)) #without the offline lepton vetoes
-      FullCutFlowRootFile87 = r.TFile.Open("./VetosAndCleaningFiles/NoFilter_Comb_v2/sigScan_%s_had_2012_86.7_bt0.0_MChi-1.0.root"%(model))
-      NMinus1RootFile87 = r.TFile.Open("./VetosAndCleaningFiles/NoFilter_Comb_v2/sigScan_%s_had_2012_86.7_bt0.0_MChi-1.0_noLeptVeto.root"%(model)) #without the offline lepton vetoes
-      FullCutFlowRootFile74 = r.TFile.Open("./VetosAndCleaningFiles/NoFilter_Comb_v2/sigScan_%s_had_2012_73.7_bt0.0_MChi-1.0.root"%(model))
-      NMinus1RootFile74 = r.TFile.Open("./VetosAndCleaningFiles/NoFilter_Comb_v2/sigScan_%s_had_2012_73.7_bt0.0_MChi-1.0_noLeptVeto.root"%(model)) #without the offline lepton vetoes
+      FullCutFlowRootFile100 = r.TFile.Open("./rootfiles/T2cc_v8/sigScan_%s_had_2012_100.0_bt0.0_MChi-1.0.root"%(model))
+      NMinus1RootFile100 = r.TFile.Open("./rootfiles/T2cc_v8/%s/sigScan_%s_had_2012_100.0_bt0.0_MChi-1.0.root"%(cut, model))
+      FullCutFlowRootFile87 = r.TFile.Open("./rootfiles/T2cc_v8/sigScan_%s_had_2012_86.7_bt0.0_MChi-1.0.root"%(model))
+      NMinus1RootFile87 = r.TFile.Open("./rootfiles/T2cc_v8/%s/sigScan_%s_had_2012_86.7_bt0.0_MChi-1.0.root"%(cut, model))
+      FullCutFlowRootFile74 = r.TFile.Open("./rootfiles/T2cc_v8/sigScan_%s_had_2012_73.7_bt0.0_MChi-1.0.root"%(model))
+      NMinus1RootFile74 = r.TFile.Open("./rootfiles/T2cc_v8/%s/sigScan_%s_had_2012_73.7_bt0.0_MChi-1.0.root"%(cut, model))
 
 
       # Make cross sections/ efficiencies
@@ -157,16 +190,14 @@ for cut in Cuts:
 
       nocuts = GetHist(File = FullCutFlowRootFile100,folder = ["smsScan_before",], hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2)
       nocuts = threeToTwo(nocuts)
-      
-      anaDirs = ["smsScan_eq0_geq2j_AlphaT55_375_475", "smsScan_eq0_geq2j_AlphaT55_475_575", "smsScan_eq0_geq2j_AlphaT55_575_675", "smsScan_eq0_geq2j_AlphaT55_675_775", "smsScan_eq0_geq2j_AlphaT55_775_875", "smsScan_eq0_geq2j_AlphaT55_875", "smsScan_geq1_geq2j_AlphaT55_375_475", "smsScan_geq1_geq2j_AlphaT55_475_575", "smsScan_geq1_geq2j_AlphaT55_575_675", "smsScan_geq1_geq2j_AlphaT55_675_775", "smsScan_geq1_geq2j_AlphaT55_775_875", "smsScan_geq1_geq2j_AlphaT55_875"]
 
-      FullCutFlow = GetHist(File = FullCutFlowRootFile100,folder = anaDirs,hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
-      FullCutFlow.Add( GetHist(File = FullCutFlowRootFile87,folder = ["smsScan_eq0_geq2j_AlphaT55_325_375"],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2) )
-      FullCutFlow.Add( GetHist(File = FullCutFlowRootFile74,folder = ["smsScan_eq0_geq2j_AlphaT55_275_325"],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2) )                                                  
+      FullCutFlow = GetHist(File = FullCutFlowRootFile100,folder = getRootDirs()[2:],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
+      FullCutFlow.Add( GetHist(File = FullCutFlowRootFile87,folder = getRootDirs()[1:2],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2) )
+      FullCutFlow.Add( GetHist(File = FullCutFlowRootFile74,folder = getRootDirs()[0:1],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2) )                                                  
 
-      NMinus1 = GetHist(File = NMinus1RootFile100,folder = anaDirs,hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
-      NMinus1.Add( GetHist(File = NMinus1RootFile87,folder = ["smsScan_eq0_geq2j_AlphaT55_325_375"],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2) )
-      NMinus1.Add( GetHist(File = NMinus1RootFile74,folder = ["smsScan_eq0_geq2j_AlphaT55_275_325"],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2) )
+      NMinus1 = GetHist(File = NMinus1RootFile100,folder = getRootDirs()[2:],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2).Clone()
+      NMinus1.Add( GetHist(File = NMinus1RootFile87,folder = getRootDirs()[1:2],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2) )
+      NMinus1.Add( GetHist(File = NMinus1RootFile74,folder = getRootDirs()[0:1],hist = "m0_m12_mChi_noweight", Norm = None ,rebin= 2) )
 
       FullCutFlow = threeToTwo(FullCutFlow)
       NMinus1 = threeToTwo(NMinus1)
@@ -206,7 +237,7 @@ for cut in Cuts:
       FullCutFlowEff.GetZaxis().SetTitleOffset(offset)
       FullCutFlowEff.GetZaxis().SetTitleSize(0.05)
       FullCutFlowEff.GetXaxis().SetTitle(xTitle)
-      FullCutFlowEff.SetTitle("Total Eff. (w/ gLeptVeto)")
+      FullCutFlowEff.SetTitle("Total Eff. (w/ cut)")
 
       # FullCutFlowEff.GetYaxis().SetLabelSize(0.04)
       FullCutFlowEff.GetYaxis().SetTitleOffset(1.3)
@@ -229,7 +260,7 @@ for cut in Cuts:
       NMinus1Eff.GetYaxis().SetTitleOffset(1.3)
       NMinus1Eff.GetYaxis().SetTitleSize(0.05)        
       NMinus1Eff.GetYaxis().SetTitle(yTitle)
-      NMinus1Eff.SetTitle("Total Eff. (wo/ gLeptVeto)")
+      NMinus1Eff.SetTitle("Total Eff. (wo/ cut)")
       NMinus1Eff.Divide(nocuts)
       NMinus1Eff.SetMaximum(imax)
       NMinus1Eff.Draw("COLZ")
@@ -244,26 +275,28 @@ for cut in Cuts:
           EffChange.SetBinContent(bin, EffChange.GetBinContent(bin)-1.)
         else:
           EffChange.SetBinContent(bin, -1000.)
-      EffChange.SetMinimum(-.01)
-      EffChange.SetMaximum(.01)
+      EffChange.SetMinimum(-1.*jmax)
+      EffChange.SetMaximum(jmax)
       EffChange.Draw("COLZ")  
       c1.Print()
 
      
       oneDMap = r.TH2D(FullCutFlowEff)
       oneDMap.SetTitle("OneDMap")
-      oneD = r.TH1D("OneD_Projection","",500,0,.02)
+      oneD = r.TH1D("OneD_Projection","",500,0,jmax)
 
       irange = EffChange.GetXaxis().GetNbins()*EffChange.GetYaxis().GetNbins()
 
       for bin in range(irange+1000):
-        if EffChange.GetBinContent(bin) > -0.2 :
+        if EffChange.GetBinContent(bin) > (-1.*jmax) :
           oneD.Fill(math.fabs(EffChange.GetBinContent(bin)))
           print EffChange.GetBinContent(bin)
 
       scaloneD = oneD.Integral()
       oneD = MakeCumu(oneD)
-      oneD.Scale(1./scaloneD)
+      if scaloneD>0:
+        oneD.Scale(1./scaloneD)
+  
       oneD.Draw("h")
 
       oneD.GetXaxis().SetTitle("Inefficiency from cut")
@@ -271,7 +304,6 @@ for cut in Cuts:
       # now find 68%
       bin68 = 0
       for bin in range(oneD.GetNbinsX()):
-        # print model, oneD.GetBinContent(bin) , bin
         if oneD.GetBinContent(bin) <= 0.68:
           bin68 = bin
       oneDClone = r.TH1D(oneD)
