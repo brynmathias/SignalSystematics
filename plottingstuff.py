@@ -11,6 +11,7 @@ import sys
 import os
 import ROOT as r
 
+r.gROOT.SetBatch(r.kTRUE)
 
 leg = r.TLegend(0.5, 0.5, 0.8, 0.8)
 leg.SetShadowColor(0)
@@ -24,6 +25,7 @@ leg.SetFillStyle(4100)
 leg.SetFillColor(0)
 leg.SetLineColor(0)
 closeList= []
+
 def GetHist(DataSetName = None,folder = None ,hist = "myHist",col = 0,norm = None ,Legend = "hist", rebin = None):
     # print type(DataSetName)
     if ".root" in DataSetName:
@@ -130,7 +132,7 @@ def deltaM(h2):
                 if val>maxVal: maxVal=val
                 if val<minVal: minVal=val
 
-    nbins = int((int(maxVal)+10 - int(minVal))/h2.GetYaxis().GetBinWidth(5))
+    nbins = int((int(maxVal)+10 - int(minVal))/h2.GetYaxis().GetBinWidth(5))*2
 
     h2_dM = r.TH2D(h2.GetName(), h2.GetTitle(),
                     h2.GetNbinsX(), h2.GetXaxis().GetXmin(), h2.GetXaxis().GetXmax(),
@@ -140,7 +142,8 @@ def deltaM(h2):
         for iX in range(1, 1+h2.GetNbinsX()):
             if h2.GetBinContent(iX, iY) > 0.:
                 content = h2.GetBinContent(iX, iY)
-                ybinVal = h2.GetXaxis().GetBinCenter(iX) - h2.GetYaxis().GetBinCenter(iY)
+                ybinVal = h2.GetXaxis().GetBinLowEdge(iX) - h2.GetYaxis().GetBinLowEdge(iY)
+                print ybinVal
                 ybin = h2.GetYaxis().FindBin(ybinVal)
                 h2_dM.Fill(int(h2.GetXaxis().GetBinCenter(iX)), int(ybinVal), content)
 
