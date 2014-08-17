@@ -38,3 +38,4 @@ rootfiles/
 envCvRelHist.root
 *.sublime-project
 *.sublime-workspace
+*.root
