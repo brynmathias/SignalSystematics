@@ -20,8 +20,8 @@ r.TH2.SetDefaultSumw2(1)
 settings = {
     "model":    ["T2cc", "T2", "T2_4body", "T2tt", "T2bw_0p25", "T2bw_0p75"][3],
     "version":  7,
-    "mode":     ["JES", "ISR", "bTag", "LeptonVeto", "DeadECAL", "MHT_MET", "3jet"][:6],
-    "systTests":["JES", "ISR", "bTag", "LeptonVeto", "DeadECAL", "MHT_MET", "3jet"][:6],
+    "mode":     ["JES", "ISR", "bTag", "LeptonVeto", "DeadECAL", "MHT_MET", "3jet"][:-1],
+    "systTests":["JES", "ISR", "bTag", "LeptonVeto", "DeadECAL", "MHT_MET", "3jet", "Lumi"],
     "HTBins":   ["200_275", "275_325", "325_375", "375_475", "475_575", "575_675", "675_775", "775_875", "875_975", "975_1075", "1075"],
     "deltaM":   [False, True][0],
     "SITV":     [False, True][1],
@@ -30,10 +30,12 @@ settings = {
     "text_plot":[False, True][0]
 }
 
+# flat systs currently applied flat across plane AND cats
 flat_systs = {
     "T2cc":{
         "MHT_MET":  0.02,
         "DeadECAL": 0.02,
+        "3jet":     0.005, # estimated from most significant deviation
     },
     "T2_4body":{
         "MHT_MET":  0.02,
@@ -52,6 +54,10 @@ flat_systs = {
         "DeadECAL": 0.02,
     },
 }
+
+# add in flat 4.4% systematic for luminosity
+for model in flat_systs:
+    flat_systs[model]["Lumi"] = 0.044
 
 ###-------------------------------------------------------------------###
 def getRootDirs(bMulti_="", jMulti_="", sitv_=False):
@@ -100,11 +106,13 @@ def make_syst_map_three(bMulti = "", jMulti = ""):
     # loop through all given systematic tests
     for n_syst, mode in enumerate(settings["mode"]):
 
-        # if mode == "LeptonVeto": continue
-
         # only consider 3jet test for T2cc
         if "T2cc" not in settings['model'] and mode == "3jet":
             print "Warning: 3jet test only available for T2cc. Skipping..."
+            continue
+
+        # don't consider LeptonVeto systematic for T2cc
+        if settings['mode'] == "T2cc" and mode == "LeptonVeto":
             continue
 
         print "    >>", mode
@@ -195,9 +203,9 @@ def make_syst_map_three(bMulti = "", jMulti = ""):
         cutsHist.Add(sutils.GetHist(File=centalRootFile100, folder=getRootDirs(bMulti_ = bMulti, jMulti_ = jMulti, sitv_ = settings['SITV'] if mode != "LeptonVeto" else False)[3:], hist="m0_m12_mChi_weight", Norm=None, rebinY=1))
         cutsHist = sutils.threeToTwo(cutsHist)
 
-        cutsJESPlusHist = sutils.GetHist(File=jesPlusRootFile73, folder=getRootDirs(bMulti_ = bMulti, jMulti_ = jMulti, sitv_ = settings['SITV'])[0:2], hist="m0_m12_mChi_weight", Norm=None, rebinY=1).Clone()
-        cutsJESPlusHist.Add(sutils.GetHist(File=jesPlusRootFile86, folder=getRootDirs(bMulti_ = bMulti, jMulti_ = jMulti, sitv_ = settings['SITV'])[2:3], hist="m0_m12_mChi_weight", Norm=None, rebinY=1))
-        cutsJESPlusHist.Add(sutils.GetHist(File=jesPlusRootFile100, folder=getRootDirs(bMulti_ = bMulti, jMulti_ = jMulti, sitv_ = settings['SITV'])[3:], hist="m0_m12_mChi_weight", Norm=None, rebinY=1))
+        cutsJESPlusHist = sutils.GetHist(File=jesPlusRootFile73, folder=getRootDirs(bMulti_ = bMulti, jMulti_ = jMulti, sitv_ = settings['SITV'] if mode != "LeptonVeto" else False)[0:2], hist="m0_m12_mChi_weight", Norm=None, rebinY=1).Clone()
+        cutsJESPlusHist.Add(sutils.GetHist(File=jesPlusRootFile86, folder=getRootDirs(bMulti_ = bMulti, jMulti_ = jMulti, sitv_ = settings['SITV'] if mode != "LeptonVeto" else False)[2:3], hist="m0_m12_mChi_weight", Norm=None, rebinY=1))
+        cutsJESPlusHist.Add(sutils.GetHist(File=jesPlusRootFile100, folder=getRootDirs(bMulti_ = bMulti, jMulti_ = jMulti, sitv_ = settings['SITV'] if mode != "LeptonVeto" else False)[3:], hist="m0_m12_mChi_weight", Norm=None, rebinY=1))
         cutsJESPlusHist = sutils.threeToTwo(cutsJESPlusHist)
 
         if not cut_syst:
@@ -243,8 +251,8 @@ def make_syst_map_three(bMulti = "", jMulti = ""):
         
 
         # if test mode in list, then add to total systematic
-        if mode in settings["systTests"]:
-            print "      >> Adding %s test to total systematic." % mode
+        # only add if point-by-point value is used
+        if mode in settings["systTests"] and mode in ["JES", "ISR", "bTag", "LeptonVeto"]:
             my_syst_hists.append(deepcopy(my_systMap._syst._hist))
 
         del my_systMap
@@ -326,18 +334,19 @@ def make_syst_map_three(bMulti = "", jMulti = ""):
             mass_val += hist_val*hist_val
             this_hist_vals.append(hist_val)
 
-        # now add the flat contributions from DeadECAL and MHT_MET
-        if "MHT_MET" in settings["systTests"]:
-            flat_val = flat_systs[settings["model"]]["MHT_MET"]
-            mass_val += flat_val*flat_val
-        if "DeadECAL" in settings["systTests"]:
-            flat_val = flat_systs[settings["model"]]["DeadECAL"]
-            mass_val += flat_val*flat_val
+        # now add the flat contributions from DeadECAL, MHT_MET, "Lumi"
+        for flat_test in ["MHT_MET", "DeadECAL", "Lumi", "3jet"]:
+            if flat_test not in settings['systTests']:
+                continue
+            
+            try:
+                flat_val = flat_systs[settings["model"]][flat_test]
+            except KeyError:
+                flat_val = 0.
 
+            mass_val += flat_val*flat_val
 
         mass_val = math.sqrt(mass_val)
-        # if mass_val > 1.:
-        #     print this_hist_vals
         syst_vals.append(mass_val)
 
         # fill total syst histogram with quad summed systematic        
