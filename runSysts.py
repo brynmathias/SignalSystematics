@@ -3,10 +3,11 @@
 import ROOT as r
 import signalUtils as sutils
 import numpy as np
+import commands as cmds
 import math
 from copy import deepcopy
 from plotDetails import alphaTDict
-from plotting_classes import systMap
+from plotting_classes import systMap, multiPagePDF
 
 ###-------------------------------------------------------------------###
 ###-------------------------------------------------------------------###
@@ -18,8 +19,8 @@ r.TH2.SetDefaultSumw2(1)
 
 
 settings = {
-    "model":    ["T2cc", "T2", "T2_4body", "T2tt", "T2bw_0p25", "T2bw_0p75"][3],
-    "version":  7,
+    "model":    ["T2cc", "T2", "T2_4body", "T2tt", "T2bw_0p25", "T2bw_0p75"][-1],
+    "version":  2,
     "mode":     ["JES", "ISR", "bTag", "LeptonVeto", "DeadECAL", "MHT_MET", "3jet"][:-1],
     "systTests":["JES", "ISR", "bTag", "LeptonVeto", "DeadECAL", "MHT_MET", "3jet", "Lumi"],
     "HTBins":   ["200_275", "275_325", "325_375", "375_475", "475_575", "575_675", "675_775", "775_875", "875_975", "975_1075", "1075"],
@@ -29,6 +30,8 @@ settings = {
     "bMulti":   ["eq0b", "eq1b", "eq2b", "eq3b", "ge0b"][:-1],
     "text_plot":[False, True][0]
 }
+
+# settings['systTests'].pop(3)
 
 # flat systs currently applied flat across plane AND cats
 flat_systs = {
@@ -112,7 +115,7 @@ def make_syst_map_three(bMulti = "", jMulti = ""):
             continue
 
         # don't consider LeptonVeto systematic for T2cc
-        if settings['mode'] == "T2cc" and mode == "LeptonVeto":
+        if settings['model'] == "T2cc" and mode == "LeptonVeto":
             continue
 
         print "    >>", mode
@@ -375,11 +378,11 @@ def make_syst_map_three(bMulti = "", jMulti = ""):
         tot_min = np.nan
         tot_max = np.nan
 
-    num = r.TLatex(0.15,0.8,"Avg=%.3f, Min=%.3f, Max=%.3f"%(tot_mean, tot_min, tot_max))
+    total_stat_string = "Avg=%.3f, Min=%.3f, Max=%.3f"%(tot_mean, tot_min, tot_max)
+    # print "\t>> Total: %s" % total_stat_string
+    num = r.TLatex(0.15,0.8, total_stat_string)
     num.SetNDC()
     num.Draw("same")
-
-    print "\t>> Total: Avg=%.3f, Min=%.3f, Max=%.3f"%(tot_mean, tot_min, tot_max)
 
     c_total.Print(out_name)
 
@@ -391,7 +394,7 @@ def make_syst_map_three(bMulti = "", jMulti = ""):
     out_root_file.Close()
 
     del out_root_file
-
+    return total_stat_string
 
 if __name__ == "__main__":
 
@@ -402,8 +405,18 @@ if __name__ == "__main__":
         print "settings['bMulti'] must be list."
         exit()
 
+    total_syst_txt = "*"*32
+    total_syst_txt += "\n*** Total systematic summary ***\n"
+    total_syst_txt += "*"*32
+    total_syst_txt += "\n\n"
+
     # loop through all bjet and jet mutliplicity combinations
     for jM_ in settings["jMulti"]:
         for bM_ in settings["bMulti"]:
-            make_syst_map_three(bMulti = bM_, jMulti = jM_)
+            total_syst_txt += "* %s %s *\n" % (bM_, jM_)
+            total_syst_txt += make_syst_map_three(bMulti = bM_, jMulti = jM_)
+            total_syst_txt += "\n\n"
 
+    print "\n\n", total_syst_txt
+
+    cmds.getstatusoutput("hadd out/%s_v%d_systematics.root out/*root" % (settings['model'], settings['version']))
