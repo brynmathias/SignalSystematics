@@ -1,12 +1,15 @@
 import ROOT as r
 from sys import exit
 
-pdf_file = r.TFile.Open("T2cc_pdf_systematic.root", 'READ')
-pdf_hist = pdf_file.Get("new_pdf")
 
+# pdf_file = r.TFile.Open("envCvRelHist.root", 'READ')
+# pdf_hist = pdf_file.Get("acc_cvRel_m0_m12")
+pdf_file = r.TFile.Open("T2_4body_shifted.root", 'READ')
+pdf_hist = pdf_file.Get("acc_cvRel_m0_m12_incl_ra1cat")
 # new hist to match other T2cc binning
-new_file = r.TFile.Open("T2_4body_systematics.root", 'CREATE')
-new_hist = r.TH2D("new_pdf", "new_pdf", 14, 75.0, 425., 39, 10., 400.)
+new_file = r.TFile.Open("T2_4body_systematics_shifted.root", 'RECREATE')
+# new_hist = r.TH2D("new_pdf", "new_pdf", 13, 62.5, 387.5, 70, 7.5, 357.5)
+new_hist = r.TH2D("new_pdf", "new_pdf", 38, 87.5, 1037.5, 39, -12.5, 962.5)
 
 vals_dict = {}
 
@@ -19,6 +22,7 @@ for xbin in range(1, pdf_hist.GetXaxis().GetNbins()+1):
 	for ybin in range(1, pdf_hist.GetYaxis().GetNbins()+1):
 		val = pdf_hist.GetBinContent(xbin, ybin)
 		if val:
+			print pdf_hist.GetYaxis().GetBinLowEdge(ybin)
 			vals_dict[xloed][pdf_hist.GetYaxis().GetBinLowEdge(ybin)] = val
 
 for xkey in vals_dict:
