@@ -1,6 +1,8 @@
 import ROOT as r
 from array import array
 import plotDetails as pdeets
+import numpy as np
+import math
 
 r.gROOT.SetBatch(r.kTRUE)
 
@@ -58,9 +60,10 @@ def threeToTwo(h3):
 
 def GetHist(File=None, folder=None, hist=None, Norm=None, rebinX=None, rebinY=None):
     h = None
-
+    
     for f in folder:
         directory = File.Get(f)
+        # print f, h
         a = directory.Get(hist)
         if h is None:
             h = a.Clone()
@@ -77,19 +80,18 @@ def GetHist(File=None, folder=None, hist=None, Norm=None, rebinX=None, rebinY=No
 ###-------------------------------------------------------------------###
 
 
-def getRootDirs(bMulti_="", jMulti_="", sitv_=False):
+def getRootDirs(bMulti_="", jMulti_="", htbins = [], sitv_=False):
 
     dirs = []
 
 
-    for ht in settings["HTBins"]:
+    for ht in htbins:
         thisHT = ht.split("_")
         if len(thisHT)<2: thisHT.append(None)
         aT = pdeets.alphaTDict["%s,%s" % (thisHT[0], thisHT[1])][0]
         aTString = "AlphaT%s" % (str(aT[0])+"_"+str(aT[1]) if aT[1] else str(aT[0]))
         dirs.append("smsScan_%s_%s_%s%s_%s" % (bMulti_, jMulti_,
                     "SITV_" if sitv_ else "", aTString, ht))
-        print dirs
     return dirs
 
 ###-------------------------------------------------------------------###
@@ -119,35 +121,37 @@ def getPointVal(hist=None, xval=0., yval=0):
 
 def deltaM(h2):
 
-    minVal = 0.;
+    minVal = 100.;
     maxVal = 0.;
 
+    # get the splitting range
     for iY in range(1, 1+h2.GetNbinsY()):
         for iX in range(1, 1+h2.GetNbinsX()):
             if h2.GetBinContent(iX, iY) > 0.:
                 val = h2.GetXaxis().GetBinCenter(iX) - h2.GetYaxis().GetBinCenter(iY)
-                if val>maxVal: maxVal=val
-                if val<minVal: minVal=val
+                if val>maxVal:
+                    maxVal=val
+                if val<minVal:
+                    minVal=val
 
-    nbins = int((int(maxVal)+10 - int(minVal))/h2.GetYaxis().GetBinWidth(5))*2
+    nbins = int((int(maxVal)+10. - int(minVal))/h2.GetYaxis().GetBinWidth(5))
 
     h2_dM = r.TH2D(h2.GetName(), h2.GetTitle(),
                     h2.GetNbinsX(), h2.GetXaxis().GetXmin(), h2.GetXaxis().GetXmax(),
-                    nbins, int(minVal), int(maxVal)+10)
+                    # nbins, int(minVal), int(maxVal)+10.)
+                    nbins+2, 0., int(maxVal)+10.)
+    print "delta mass bin hack!!!!"
 
     for iY in range(1, 1+h2.GetNbinsY()):
         for iX in range(1, 1+h2.GetNbinsX()):
             if h2.GetBinContent(iX, iY) > 0.:
                 content = h2.GetBinContent(iX, iY)
-                ybinVal = h2.GetXaxis().GetBinLowEdge(iX) - h2.GetYaxis().GetBinLowEdge(iY)
-                print ybinVal
+                ybinVal = h2.GetXaxis().GetBinCenter(iX) - h2.GetYaxis().GetBinCenter(iY)
                 ybin = h2.GetYaxis().FindBin(ybinVal)
                 h2_dM.Fill(int(h2.GetXaxis().GetBinCenter(iX)), int(ybinVal), content)
 
     h2_dM.GetXaxis().SetTitle("mStop (GeV)")
     h2_dM.GetYaxis().SetTitle("deltaM (GeV)")
-
-    #h2_dM.RebinX(2)
 
     return h2_dM
 
@@ -200,6 +204,111 @@ def copyHist(hist=None, name=""):
 
     return h
 
+
+###-------------------------------------------------------------------###
+def reject_outliers(data, m = 2.):
+    """return listen of indices to reject"""
+
+    reject = []
+    new = [np.abs(d - np.median(data)) for d in data]
+    mdev = np.median(new)
+    snew = []
+    for d in new:
+        if mdev:
+            snew.append(d/mdev)
+        else:
+            snew.append(0.)
+    for n in range(len(snew)):
+        if snew[n]>m:
+            reject.append(n)
+        if snew[n] == 0.:
+            reject.append(n)
+
+    return reject
+
+def syst_smooth(eff = None, err = None, iterations = 1):
+    """smooth the eff"""
+
+    print "Smoothing%s, %d iterations" % (" with err" if err else "", iterations)
+
+    new_hist = eff.Clone()
+    itera = 0
+    # note: ONLY WORKS FOR T2CC AND T24BODY because of binning assumptions
+    while itera < iterations:
+        for xbin in range(1, eff.GetNbinsX()+100):
+            for ybin in range(1, eff.GetNbinsY()+100):
+
+                val = eff.GetBinContent(xbin, ybin)
+                if val <= 0.: continue
+                vals = []
+                errs = []
+
+                for xtmp in range(-2,3):
+                    tmp_val = eff.GetBinContent( xbin+xtmp, ybin+xtmp*5)
+                    if tmp_val > 0.:
+                        if err:
+                            # get relative err
+                            tmp_err = float(err.GetBinContent( xbin+xtmp, ybin+xtmp*5)/tmp_val)
+                        else:
+                            tmp_err = 0.
+                        vals.append(tmp_val)
+                        if tmp_err > 0.:
+                            errs.append(float(1./math.pow(tmp_err, 1)))
+                        else:
+                            errs.append(0.)
+
+                for ytmp in range(-1,2):
+                    tmp_val = eff.GetBinContent(xbin, ybin+ytmp*2)
+                    if tmp_val > 0.:
+                        if err:
+                            tmp_err = float(err.GetBinContent(xbin, ybin+ytmp*2)/tmp_val)
+                        else:
+                            tmp_err = 0.
+                        vals.append(tmp_val)
+                        if tmp_err > 0.:
+                            errs.append(float(1./math.pow(tmp_err, 1)))
+                        else:
+                            errs.append(0.)
+                # get weighted average considering errs
+                err_sum = np.sum(errs)
+                vals_array = np.array(vals)
+                to_rej = reject_outliers(vals_array)
+
+                new_vals = []
+                new_errs = []
+                for n in range(len(vals)):
+                    if n not in to_rej:
+                        new_vals.append(vals[n])
+                        new_errs.append(errs[n])
+                err_sum = np.sum(new_errs)
+                if err_sum>0.:
+                    for j in range(len(new_errs)):
+                        new_errs[j]/=err_sum
+                    ave_val = np.average(new_vals, weights=new_errs)
+                else:
+                    # should only be in here in err == None
+                    ave_val = np.average(new_vals)
+
+                if ave_val == np.nan:
+                    ave_val = 1.
+                new_hist.SetBinContent(xbin, ybin, ave_val)
+        itera+=1
+
+        eff = new_hist.Clone()
+    return new_hist
+
+###-------------------------------------------------------------------###
+
+def dict_printer(dicto = {}, indent = 1):
+  
+  print "{ (%d keys)\n" % len(dicto)
+  for key in dicto:
+    print "\t"*indent, "'%s': " % key,
+    if dict == type(dicto[key]):
+      dict_printer(dicto[key], indent+1)
+    else:
+      print dicto[key]
+  print "\t"*indent, "}\n"
 
 ###-------------------------------------------------------------------###
 ###-------------------------------------------------------------------###
