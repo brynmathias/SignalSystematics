@@ -33,6 +33,7 @@ pip-log.txt
 out/
 VetosAndCleaningFiles/
 rootfiles/
+dev/
 
 # Files
 envCvRelHist.root
