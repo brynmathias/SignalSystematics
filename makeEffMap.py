@@ -3,6 +3,7 @@
 import itertools
 import ROOT as r
 from array import array
+from model_versions import versions
 from plotDetails import mapRanges, mapDMRanges, alphaTDict
 
 r.gStyle.SetOptStat(0)
@@ -12,17 +13,16 @@ r.TH1.SetDefaultSumw2(1)
 r.TH2.SetDefaultSumw2(1)
 
 settings = {
-    "model":["T2cc", "T1ttcc", "T2tt", "T2bb", "T2_4body", "T2bw_0p25", "T2bw_0p75"][0],
-    "version":32, # integer used for file directory versioning
+    "model":["T2cc", "T1ttcc", "T2tt", "T2bb", "T2_4body", "T2bw_0p25", "T2bw_0p75", "pmssm"][0],
     "HTBins":["200_275", "275_325", "325_375", "375_475", "475_575", "575_675", "675_775", "775_875", "875_975", "975_1075", "1075"],
     "deltaM":[False, True][0],
     "jMulti":["le3j", "ge4j", "ge2j", "eq2j", "eq3j", "eq4j", "ge5j"][:2],
-    "bMulti":["eq0b","eq1b","eq2b","eq3b","ge0b"][:4],
+    "bMulti":["eq0b","eq1b","eq2b","eq3b","ge0b"][:-1],
     "SITV":[False, True][1],
-    "run_mode":["eff_maps", "sitv_acceptance", "btag_compare"][0],
+    "run_mode":["eff_maps", "sitv_acceptance", "leptVeto_acceptance", "btag_compare", "minbias_acceptance"][0],
     "combine_output":[False, True][0],
-    "text_plot":[False, True][0],
-    "sele":["had","muon"][0]
+    "text_plot":[False, True][1],
+    "sele":["had","muon"][1]
 }
 
 def set_palette(name="", ncontours=30):
@@ -140,9 +140,11 @@ def getRootDirs(bMulti_="", jMulti_="", sitv_=False):
                             "SITV_" if sitv_ else "", aTString, ht)
                 else:
                     aTString = "NoAlphaT"
-                    out_string = "smsScan_%s_%s_%s%s_%s" % (bM, jM,
-                            aTString, "_SITV" if sitv_ else "", ht)
-                
+                    # out_string = "smsScan_%s_%s_%s%s_%s" % (bM, jM,
+                    #         aTString, "_SITV" if sitv_ else "", ht)
+                    out_string = "smsScan_%s_%s%s_%s_%s" % (bM, jM,
+                            "_SITV" if sitv_ else "", aTString, ht)
+
                 dirs.append(out_string)
 
     return dirs
@@ -166,7 +168,7 @@ def getOutFile(model="", htbin="", format="", bMulti_="", jMulti_="", sitv_=Fals
         jMulti = [jMulti]
 
     if format == "txt":
-        outName = "%s_v%d_%s_systOutput_%s_%s.txt" % (model, settings['version'], settings["run_mode"], "_".join(bMulti), "_".join(jMulti))
+        outName = "%s_v%d_%s_systOutput_%s_%s.txt" % (model, versions[settings['model']], settings["run_mode"], "_".join(bMulti), "_".join(jMulti))
     elif "pdf" in format:
         outName = "%s_%s_%s_%s_%s%s%s.pdf" % (model, settings['sele'], settings['run_mode'], "_".join(bMulti), "_".join(jMulti),
                                             "_SITV" if sitv_ else "",
@@ -187,7 +189,7 @@ def getScanMax(hist=None):
             maxCont = val
     
     # return(0.001)
-    # return max val rounded to 3 sig figs
+    # return max val rounded to 4 sig figs  
     return round(maxCont,4)
 
 def getScanMin(hist=None):
@@ -204,27 +206,30 @@ def getScanMin(hist=None):
 
 def deltaM(h2):
 
-    minVal = 0.;
+    minVal = 100.;
     maxVal = 0.;
 
+    # get the splitting range
     for iY in range(1, 1+h2.GetNbinsY()):
         for iX in range(1, 1+h2.GetNbinsX()):
             if h2.GetBinContent(iX, iY) > 0.:
                 val = h2.GetXaxis().GetBinCenter(iX) - h2.GetYaxis().GetBinCenter(iY)
-                if val>maxVal: maxVal=val
-                if val<minVal: minVal=val
+                if val>maxVal:
+                    maxVal=val
+                if val<minVal:
+                    minVal=val
 
-    nbins = int((int(maxVal)+10 - int(minVal))/h2.GetYaxis().GetBinWidth(5))*2
+    nbins = int((int(maxVal)+10. - int(minVal))/h2.GetYaxis().GetBinWidth(5))
 
     h2_dM = r.TH2D(h2.GetName(), h2.GetTitle(),
                     h2.GetNbinsX(), h2.GetXaxis().GetXmin(), h2.GetXaxis().GetXmax(),
-                    nbins, int(minVal), int(maxVal)+10)
+                    nbins, int(minVal), int(maxVal)+10.)
 
     for iY in range(1, 1+h2.GetNbinsY()):
         for iX in range(1, 1+h2.GetNbinsX()):
             if h2.GetBinContent(iX, iY) > 0.:
                 content = h2.GetBinContent(iX, iY)
-                ybinVal = h2.GetXaxis().GetBinLowEdge(iX) - h2.GetYaxis().GetBinLowEdge(iY)
+                ybinVal = h2.GetXaxis().GetBinCenter(iX) - h2.GetYaxis().GetBinCenter(iY)
                 ybin = h2.GetYaxis().FindBin(ybinVal)
                 h2_dM.Fill(int(h2.GetXaxis().GetBinCenter(iX)), int(ybinVal), content)
 
@@ -285,7 +290,7 @@ def make_eff_map_plot(file73 = None, file87 = None, file100 = None, bMulti = "",
 
     rebin_y_val = 1
 
-    nocuts = GetHist(File = centralRootFile100,folder = ["smsScan_before",],hist = "m0_m12_mChi_noweight", Norm = None, rebinY=rebin_y_val)
+    nocuts = GetHist(File = file100,folder = ["smsScan_before",],hist = "m0_m12_mChi_weight", Norm = None, rebinY=rebin_y_val)
     nocuts = threeToTwo(nocuts)
 
     nocuts.GetXaxis().SetRangeUser(xRange[0], xRange[1])
@@ -300,9 +305,9 @@ def make_eff_map_plot(file73 = None, file87 = None, file100 = None, bMulti = "",
 
     if no_cuts: return nocuts
 
-    cutsJESPlusHist = GetHist(File=centralRootFile73, folder=getRootDirs(bMulti_ = bMulti, jMulti_ = jMulti, sitv_ = sitv)[0:1], hist="m0_m12_mChi_noweight", Norm=None, rebinY=rebin_y_val).Clone()
-    cutsJESPlusHist.Add(GetHist(File=centralRootFile87, folder=getRootDirs(bMulti_ = bMulti, jMulti_ = jMulti, sitv_ = sitv)[1:2], hist="m0_m12_mChi_noweight", Norm=None, rebinY=rebin_y_val))
-    cutsJESPlusHist.Add(GetHist(File=centralRootFile100, folder=getRootDirs(bMulti_ = bMulti, jMulti_ = jMulti, sitv_ = sitv)[2:], hist="m0_m12_mChi_noweight", Norm=None, rebinY=rebin_y_val))
+    cutsJESPlusHist = GetHist(File=file73, folder=getRootDirs(bMulti_ = bMulti, jMulti_ = jMulti, sitv_ = sitv)[0:2], hist="m0_m12_mChi_weight", Norm=None, rebinY=rebin_y_val).Clone()
+    cutsJESPlusHist.Add(GetHist(File=file87, folder=getRootDirs(bMulti_ = bMulti, jMulti_ = jMulti, sitv_ = sitv)[2:3], hist="m0_m12_mChi_weight", Norm=None, rebinY=rebin_y_val))
+    cutsJESPlusHist.Add(GetHist(File=file100, folder=getRootDirs(bMulti_ = bMulti, jMulti_ = jMulti, sitv_ = sitv)[3:], hist="m0_m12_mChi_weight", Norm=None, rebinY=rebin_y_val))
     cutsJESPlusHist = threeToTwo(cutsJESPlusHist)
 
     # cutsJESPlusHist.Draw("COLZTEXT")
@@ -313,7 +318,7 @@ def make_eff_map_plot(file73 = None, file87 = None, file100 = None, bMulti = "",
         cutsJESPlusHist = deltaM(cutsJESPlusHist).Clone()
 
     if file_output:
-        c1.Print("out/%s_v%d_nocutsEff.pdf" % (settings['model'], settings['version']))
+        c1.Print("out/%s_v%d_nocutsEff.pdf" % (settings['model'], versions[settings['model']]))
 
     eff = cutsJESPlusHist.Clone()
     eff.Divide(nocuts)
@@ -329,7 +334,6 @@ def make_eff_map_plot(file73 = None, file87 = None, file100 = None, bMulti = "",
     eff.GetYaxis().SetRangeUser(yRange[0], yRange[1])     
     eff.GetZaxis().SetTitle("Fraction of expected signal yield")
     if settings['sele'] == "muon":
-        # eff.SetMinimum()
         pass
     else:
         eff.GetZaxis().SetRangeUser(0.,getScanMax(eff))
@@ -342,7 +346,6 @@ def make_eff_map_plot(file73 = None, file87 = None, file100 = None, bMulti = "",
     eff.SetTitleOffset(1.6,"z")
 
     eff.SetLabelSize(0.04, "z")
-
 
     eff.SetTitle("Total Efficiency - %s %s"%(bMulti, jMulti))
 
@@ -368,22 +371,30 @@ def make_eff_map_plot(file73 = None, file87 = None, file100 = None, bMulti = "",
     else:
         return eff
 
-def make_sitv_eff_map_plot(raw_eff = None, sitv_eff = None, bMulti = "", jMulti = "", file_output = False):
+def make_var_eff_map_plot(raw_eff = None, variation_eff = None, bMulti = "", jMulti = "", file_output = False, test_name = ""):
 
     c1 = r.TCanvas()
 
-    sitv_ratio = sitv_eff.Clone()
-    sitv_ratio.Divide(raw_eff)
+    sitv_ratio = raw_eff.Clone()
+    sitv_ratio.Divide(variation_eff)
 
-    sitv_ratio.SetTitle("SITV Acceptance - %s %s" % (bMulti, jMulti))
+    sitv_ratio.SetTitle("%s - %s %s" % (test_name, bMulti, jMulti))
 
-    sitv_ratio.Draw("colz")
+    if settings["text_plot"]:
+        r.gStyle.SetPaintTextFormat("0.4f");
+        sitv_ratio.SetMarkerSize(0.8)
+        draw_string = "colztext"
+    else:
+        draw_string = "colz"
+    sitv_ratio.Draw(draw_string)
 
-    if settings['model'] in ['T2cc', 'T2_4body']: sitv_ratio.GetZaxis().SetRangeUser( 0.6, 1. )
-    else: sitv_ratio.GetZaxis().SetRangeUser( 0.6, 1. )
+    if settings['model'] in ['T2cc', 'T2_4body']:
+        sitv_ratio.GetZaxis().SetRangeUser( 0.6, 1. )
+    else:
+        sitv_ratio.GetZaxis().SetRangeUser( 0.6, 1. )
 
     if file_output:
-        c1.Print( getOutFile(model=settings["model"], format="pdf", bMulti_=bMulti, jMulti_=jMulti, prefix="sitvAcceptance") )
+        c1.Print( getOutFile(model=settings["model"], format="pdf", bMulti_=bMulti, jMulti_=jMulti, prefix=test_name) )
     else:
         return sitv_ratio
 
@@ -398,8 +409,8 @@ def print_plot_list(list = [], combine = True, add_string = ""):
     c1 = r.TCanvas()
 
     for n, plot in enumerate(list):
-        if n==0: suf = "["
-        elif n==len(list)-1: suf = "]"
+        if n==0: suf = "("
+        elif n==len(list)-1: suf = ")"
         else: suf = ""
 
         if settings["text_plot"]:
@@ -419,7 +430,7 @@ def print_plot_list(list = [], combine = True, add_string = ""):
         plot.SetLabelSize(0.04, "z")
 
         c1.Print( "out/%s_%s%s.pdf%s" % (settings['model'], settings['run_mode'],
-                                                "_"+jM if add_string else "", suf) )
+                                                "_" if add_string else "", suf) )
 
 def divide_eff_maps(num = None, denom = None, title = "", file_output = False):
 
@@ -441,11 +452,10 @@ def divide_eff_maps(num = None, denom = None, title = "", file_output = False):
 
 if __name__ == "__main__":
     model = settings["model"]
-    version = settings["version"]
 
-    centralRootFile100 = r.TFile.Open("./rootFiles/%s_v%d/sigScan_%s_%s_2012_100.0_bt0.0_MChi-1.0.root"%(settings["model"], settings["version"], settings["model"], settings["sele"]))
-    centralRootFile87 = r.TFile.Open("./rootFiles/%s_v%d/sigScan_%s_%s_2012_86.7_bt0.0_MChi-1.0.root"%(settings["model"], settings["version"], settings["model"], settings["sele"]))
-    centralRootFile73 = r.TFile.Open("./rootFiles/%s_v%d/sigScan_%s_%s_2012_73.3_bt0.0_MChi-1.0.root"%(settings["model"], settings["version"], settings["model"], settings["sele"]))
+    centralRootFile100 = r.TFile.Open("./rootFiles/%s_v%d/sigScan_%s_%s_2012_100.0_bt0.0_MChi-1.0.root"%(settings["model"], versions[settings['model']], settings["model"], settings["sele"]))
+    centralRootFile87 = r.TFile.Open("./rootFiles/%s_v%d/sigScan_%s_%s_2012_86.7_bt0.0_MChi-1.0.root"%(settings["model"], versions[settings['model']], settings["model"], settings["sele"]))
+    centralRootFile73 = r.TFile.Open("./rootFiles/%s_v%d/sigScan_%s_%s_2012_73.3_bt0.0_MChi-1.0.root"%(settings["model"], versions[settings['model']], settings["model"], settings["sele"]))
 
     consts = {  'file73':centralRootFile73,
                 'file87':centralRootFile87,
@@ -476,13 +486,42 @@ if __name__ == "__main__":
                 kwargs["file_output"] = False
                 
                 kwargs["sitv"] = False
-                eff = make_eff_map_plot(**kwargs)
+                no_sitv_eff = make_eff_map_plot(**kwargs)
 
                 kwargs["sitv"] = True
                 sitv_eff = make_eff_map_plot(**kwargs)
 
-                plots_to_print.append( make_sitv_eff_map_plot(raw_eff = eff, sitv_eff = sitv_eff, bMulti = kwargs["bMulti"], jMulti = kwargs["jMulti"],
-                                                                file_output = False if settings["combine_output"] else True) )
+                plots_to_print.append( make_var_eff_map_plot(raw_eff = sitv_eff, variation_eff = no_sitv_eff, bMulti = kwargs["bMulti"], jMulti = kwargs["jMulti"],
+                                                                file_output = False if settings["combine_output"] else True, test_name = settings["run_mode"]) )
+            
+            elif settings["run_mode"] == "leptVeto_acceptance":
+                kwargs["file_output"] = False
+
+                nom_eff = make_eff_map_plot(**kwargs)
+                
+                kwargs['file100'] = r.TFile.Open("./rootFiles/%s_v%d/LeptonVeto/sigScan_%s_%s_2012_100.0_bt0.0_MChi-1.0_noLeptVeto.root"%(settings["model"], versions[settings['model']], settings["model"], settings["sele"]))
+                kwargs['file87'] = r.TFile.Open("./rootFiles/%s_v%d/LeptonVeto/sigScan_%s_%s_2012_86.7_bt0.0_MChi-1.0_noLeptVeto.root"%(settings["model"], versions[settings['model']], settings["model"], settings["sele"]))
+                kwargs['file73'] = r.TFile.Open("./rootFiles/%s_v%d/LeptonVeto/sigScan_%s_%s_2012_73.3_bt0.0_MChi-1.0_noLeptVeto.root"%(settings["model"], versions[settings['model']], settings["model"], settings["sele"]))
+
+                no_leptVeto_eff = make_eff_map_plot(**kwargs)
+                
+                plots_to_print.append( make_var_eff_map_plot(raw_eff = nom_eff, variation_eff = no_leptVeto_eff, bMulti = kwargs["bMulti"], jMulti = kwargs["jMulti"],
+                                                                file_output = False if settings["combine_output"] else True, test_name = settings["run_mode"]) )
+
+            elif settings["run_mode"] == "minbias_acceptance":
+                kwargs["file_output"] = False
+
+                nom_eff = make_eff_map_plot(**kwargs)
+
+                kwargs['file100'] = r.TFile.Open("./rootFiles/%s_v%d/MinBias/sigScan_%s_%s_2012_100.0_bt0.0_MChi-1.0.root"%(settings["model"], versions[settings['model']], settings["model"], settings["sele"]))
+                kwargs['file87'] = r.TFile.Open("./rootFiles/%s_v%d/MinBias/sigScan_%s_%s_2012_86.7_bt0.0_MChi-1.0.root"%(settings["model"], versions[settings['model']], settings["model"], settings["sele"]))
+                kwargs['file73'] = r.TFile.Open("./rootFiles/%s_v%d/MinBias/sigScan_%s_%s_2012_73.3_bt0.0_MChi-1.0.root"%(settings["model"], versions[settings['model']], settings["model"], settings["sele"]))
+
+                minbias_eff = make_eff_map_plot(**kwargs)
+
+                plots_to_print.append( make_var_eff_map_plot(raw_eff = minbias_eff, variation_eff = nom_eff, bMulti = kwargs["bMulti"], jMulti = kwargs["jMulti"],
+                                                                file_output = False if settings["combine_output"] else True, test_name = settings["run_mode"]) )                
+            
             else:
                 pass
 
